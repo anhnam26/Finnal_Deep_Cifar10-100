@@ -166,7 +166,7 @@ def test_paired_bootstrap_and_wilson():
 def test_export_and_aggregate(tmp_path):
     result,probabilities,logits,labels,names=fixture_metrics()
     destination=tmp_path/"runs"/"demo"/"evaluation_validation"
-    metadata={"dataset":"cifar10","variant":"baseline","split":"validation",
+    metadata={"dataset":"cifar10","variant":"no_fusion","split":"validation",
               "split_fingerprint":"fixed", "run_completed":True, "epoch":2,
               "configured_epochs":2, "seed":42,"optimizer":"sgd","lr":.1}
     export_evaluation(destination,result,logits,labels,np.arange(6),probabilities,names,metadata)
@@ -187,6 +187,18 @@ def test_export_and_aggregate(tmp_path):
     pair=compare_prediction_files(destination/"predictions.npz",destination/"predictions.npz",
                                   tmp_path/"paired.json",metadata,metadata)
     assert pair["delta_b_minus_a_percentage_points"] == 0
+    # Aggregation automatically compares only matched no_fusion/fusion recipes.
+    other = tmp_path/"runs"/"fusion"/"evaluation_validation"
+    export_evaluation(other,result,logits,labels,np.arange(6),probabilities,names,
+                      {**metadata,"variant":"fusion"})
+    (other/"complete.json").write_text('{"complete":true}')
+    aggregate_study(tmp_path)
+    paired_files = list((tmp_path/"reports").glob("paired_*.json"))
+    assert len(paired_files) == 1
+    comparison = json.loads(paired_files[0].read_text())
+    assert comparison["delta_b_minus_a_percentage_points"] == 0
+    assert comparison["a"]["variant"] == "no_fusion"
+    assert comparison["b"]["variant"] == "fusion"
     with pytest.raises(ValueError,match="dataset"):
         compare_prediction_files(destination/"predictions.npz",destination/"predictions.npz",
                                   tmp_path/"bad.json",metadata,{**metadata,"dataset":"cifar100"})
