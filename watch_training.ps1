@@ -1,8 +1,8 @@
 # Separate read-only training monitor; only its readable log is written.
 [CmdletBinding()]
 param(
-    [string]$StudyRoot = (Join-Path $PSScriptRoot 'outputs\study_two_models'),
-    [string]$ManifestPath = (Join-Path $PSScriptRoot 'configs\study\manifest.json'),
+    [string]$StudyRoot,
+    [string]$ManifestPath,
     [ValidateRange(1, 3600)][int]$IntervalSeconds = 2,
     [ValidateRange(1, 100)][int]$HistoryRows = 5,
     [ValidateRange(0, 1000000)][int]$PollCount = 0,
@@ -11,6 +11,21 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Resolve defaults after binding: PSScriptRoot can be empty in param defaults
+# when Windows PowerShell starts this script through powershell.exe -File.
+$projectRoot = $PSScriptRoot
+if ([string]::IsNullOrWhiteSpace($projectRoot)) {
+    $scriptPath = $PSCommandPath
+    if ([string]::IsNullOrWhiteSpace($scriptPath)) { $scriptPath = $MyInvocation.MyCommand.Path }
+    if ([string]::IsNullOrWhiteSpace($scriptPath)) { throw 'Cannot determine viewer script directory.' }
+    $projectRoot = Split-Path -Parent $scriptPath
+}
+if ([string]::IsNullOrWhiteSpace($StudyRoot)) {
+    $StudyRoot = Join-Path $projectRoot 'outputs\study_two_models'
+}
+if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
+    $ManifestPath = Join-Path $projectRoot 'configs\study\manifest.json'
+}
 $culture = [System.Globalization.CultureInfo]::InvariantCulture
 $readable = Join-Path $StudyRoot 'logs\training_readable.log'
 $epochSeen = @{}
@@ -82,7 +97,7 @@ foreach ($path in $manifest.grid) {
     $config = Read-Json $path
     if (-not $config) { throw "Cannot read config: $path" }
     $output = $config.output_dir
-    if (-not [System.IO.Path]::IsPathRooted($output)) { $output = Join-Path $PSScriptRoot $output }
+    if (-not [System.IO.Path]::IsPathRooted($output)) { $output = Join-Path $projectRoot $output }
     $configs += [PSCustomObject]@{ Config = $config; Output = $output; Name = (Split-Path $output -Leaf) }
 }
 Emit 'VIEWER SESSION START. Timestamps = observation time, not original epoch time.' 'EVENT'

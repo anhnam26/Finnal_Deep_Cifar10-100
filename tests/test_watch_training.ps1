@@ -39,6 +39,24 @@ try {
     Assert ($text -notmatch 'partial error|old smoke failure') 'partial errors/smoke excluded'
     Assert (-not (Test-Path "$temp\logs\training_readable.log")) 'NoFileLog does not write'
 
+    # Regression: a fresh -File process must resolve defaults from its script,
+    # not the caller's unrelated working directory. Fixture paths include spaces.
+    $cliRoot = Join-Path $temp 'cli project with spaces'
+    $cwd = Join-Path $temp 'unrelated working directory'
+    [void](New-Item -ItemType Directory "$cliRoot\configs\study", "$cliRoot\outputs\study_two_models", $cwd -Force)
+    Copy-Item $viewer "$cliRoot\watch_training.ps1"
+    Copy-Item "$temp\manifest.json" "$cliRoot\configs\study\manifest.json"
+    Copy-Item "$temp\status.json" "$cliRoot\outputs\study_two_models\status.json"
+    Push-Location $cwd
+    try {
+        $cliOutput = & "$PSHOME\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$cliRoot\watch_training.ps1" -Once -NoFileLog 2>&1
+        $cliExit = $LASTEXITCODE
+    } finally { Pop-Location }
+    $cliText = $cliOutput -join "`n"
+    Assert ($cliExit -eq 0) "fresh -File defaults succeed: $cliText"
+    Assert ($cliText -match 'GRID OVERVIEW' -and $cliText -match '\[HISTORY\] 1/3') 'CLI reads default manifest/status from script directory'
+    Assert (-not (Test-Path "$cwd\outputs")) 'CLI does not create paths under caller directory'
+
     # Background fixture writer changes epochs, exports and the active run.
     $job = Start-Job -ArgumentList $temp -ScriptBlock {
         param($t)
@@ -79,7 +97,7 @@ try {
     Remove-Item "$temp\status.json"
     & $viewer -StudyRoot $temp -ManifestPath "$temp\manifest.json" -Once -NoFileLog *> "$temp\missing.txt"
     Assert ((Get-Content "$temp\missing.txt" -Raw) -match 'Status temporarily unavailable') 'missing status retry'
-    Write-Host 'PASS: snapshots, saved rows, run switch, export, dedup, null validation, stderr, missing/stale status, file logging.'
+    Write-Host 'PASS: CLI -File default paths from unrelated directory, snapshots, saved rows, run switch, export, dedup, null validation, stderr, missing/stale status, file logging.'
 } finally {
     if ($job) { Remove-Job $job -Force -ErrorAction SilentlyContinue }
     if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }
