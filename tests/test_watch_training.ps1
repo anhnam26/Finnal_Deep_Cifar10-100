@@ -56,6 +56,9 @@ try {
     Copy-Item $viewer "$cliRoot\watch_training.ps1"
     Copy-Item "$temp\manifest.json" "$cliRoot\configs\study\manifest.json"
     Copy-Item "$temp\status.json" "$cliRoot\outputs\study_two_models\status.json"
+    [void](New-Item -ItemType Directory "$cliRoot\configs\redesign", "$cliRoot\outputs\study_redesign" -Force)
+    Json "$cliRoot\configs\redesign\manifest.json" @{ output_root = "$cliRoot\outputs\study_redesign"; grid = @("$temp\b.json") }
+    Json "$cliRoot\outputs\study_redesign\status.json" @{ phase = 'starting'; current_run = 'b'; pid = $PID }
     Push-Location $cwd
     try {
         $cliOutput = & "$PSHOME\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$cliRoot\watch_training.ps1" -Once -NoFileLog 2>&1
@@ -64,6 +67,7 @@ try {
     $cliText = $cliOutput -join "`n"
     Assert ($cliExit -eq 0) "fresh -File defaults succeed: $cliText"
     Assert ($cliText -match 'GRID OVERVIEW' -and $cliText -match '\[HISTORY\] 1/3') 'CLI reads default manifest/status from script directory'
+    Assert ($cliText -match 'STUDY: study_redesign' -and $cliText -match 'b\s+running') 'CLI discovers redesigned queue without extra flags'
     Assert (-not (Test-Path "$cwd\outputs")) 'CLI does not create paths under caller directory'
 
     # Background fixture writer changes epochs, exports and the active run.

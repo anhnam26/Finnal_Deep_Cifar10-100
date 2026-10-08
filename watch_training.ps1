@@ -129,6 +129,8 @@ $manifestPaths = @($ManifestPath) + $AdditionalManifestPaths
 if ($autoDiscover) {
     $improvement = Join-Path $projectRoot 'configs\improvement\manifest.json'
     if (Test-Path -LiteralPath $improvement) { $manifestPaths += $improvement }
+    $redesign = Join-Path $projectRoot 'configs\redesign\manifest.json'
+    if (Test-Path -LiteralPath $redesign) { $manifestPaths += $redesign }
     if (-not $ChainStatusPath) { $ChainStatusPath = Join-Path $projectRoot 'outputs\approved_chain_status.json' }
 }
 $studies = @()

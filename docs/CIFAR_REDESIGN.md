@@ -24,6 +24,8 @@ trials and remaining legacy jobs are no longer automatically scheduled.
   old4x4 bottleneck. It is a hypothesis to test, not a novel block or proven winner.
 - Shape-only profiling considered40/104/256 (0.9560G FLOPs at100classes) and
   40/112/256 (1.00015G, rejected).40/104/248 leaves greater FLOP margin.
+- Profile: CIFAR-10 **4,727,778 parameters / 922,362,218 FLOPs**;
+  CIFAR-100 **4,750,188 / 922,406,948**, same counting convention.
 
 Known foundations must be cited: [Identity Mappings in Deep Residual Networks,
 He et al.](https://arxiv.org/abs/1603.05027) and [Wide Residual Networks,
@@ -70,6 +72,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File D:\DeepLearning\Finnal\watch
 ```
 
 Do not run duplicate queues. Keep Python frozen after the new queue starts.
+The default viewer also discovers `configs/redesign/manifest.json`; reopen only
+the viewer to reload its updated discovery (not the trainer).
 The smoke/all commands are sequential alternatives to managed background launch,
 not instructions to start another process beside an already running queue.
 Source fingerprints include all root/model Python files, including preparers.
