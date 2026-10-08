@@ -1,0 +1,9 @@
+{
+  "dataset": "cifar100",
+  "epochs": 2,
+  "warmup_epochs": 0,
+  "workers": 0,
+  "max_train_batches": 10,
+  "max_val_batches": 2,
+  "output_dir": "outputs/smoke_cifar100"
+}

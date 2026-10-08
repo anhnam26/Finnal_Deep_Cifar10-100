@@ -1,0 +1,9 @@
+plan_action/
+datasets/
+outputs/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+*.pt
+*.pth

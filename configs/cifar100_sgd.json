@@ -1,0 +1,16 @@
+{
+  "dataset": "cifar100",
+  "variant": "multiscale",
+  "optimizer": "sgd",
+  "lr": 0.1,
+  "epochs": 150,
+  "warmup_epochs": 5,
+  "momentum": 0.9,
+  "nesterov": true,
+  "weight_decay": 0.0005,
+  "batch_size": 128,
+  "workers": 2,
+  "seed": 42,
+  "split_seed": 2026,
+  "output_dir": "outputs/cifar100_sgd_0.1"
+}

@@ -1,0 +1,43 @@
+{
+  "output_root": "D:\\DeepLearning\\Finnal\\outputs\\study_two_models",
+  "smoke": [
+    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\smoke_cifar10_baseline_w0.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\smoke_cifar10_multiscale_w0.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\smoke_cifar100_baseline_w0.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\smoke_cifar100_multiscale_w0.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\workers_cifar100_baseline_w2.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\workers_cifar100_multiscale_w2.json"
+  ],
+  "grid": [
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_sgd_0.05_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_multiscale_sgd_0.05_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_sgd_0.1_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_multiscale_sgd_0.1_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_sgd_0.15_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_multiscale_sgd_0.15_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_adam_0.0003_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_multiscale_adam_0.0003_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_adam_0.001_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_multiscale_adam_0.001_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_adam_0.003_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_multiscale_adam_0.003_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_baseline_sgd_0.05_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_multiscale_sgd_0.05_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_baseline_sgd_0.1_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_multiscale_sgd_0.1_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_baseline_sgd_0.15_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_multiscale_sgd_0.15_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_baseline_adam_0.0003_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_multiscale_adam_0.0003_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_baseline_adam_0.001_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_multiscale_adam_0.001_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_baseline_adam_0.003_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar100_multiscale_adam_0.003_s42.json"
+  ],
+  "grid_epochs": 3600,
+  "test_evaluation": false,
+  "worker_selection": "median full-epoch wall time w0/w2 on CIFAR100, same workers for all grid runs",
+  "grid_protocol": "150epochs seed42, fixed stratified45k/5k, no test tuning",
+  "max_grid_hours": 168,
+  "budget_reserve_factor": 1.25
+}
