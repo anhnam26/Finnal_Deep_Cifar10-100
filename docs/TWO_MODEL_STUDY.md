@@ -28,3 +28,16 @@ Compare matched configs for architecture ablation and independently tuned recipe
 Official train45k/val5k indices/split fingerprint fixed. Train loop never loads test. Evaluation requires split selection and test acknowledgement. Full-data runs must finish frozen schedule. Files saved in unique run directory; fail on mismatch/overwrite. Resume restores optimizer/scaler/RNG/loader RNG at completed epoch boundaries; source fingerprints and logs recorded. One active queue via lock, sequential subprocesses, fail-stop on errors, stop-request checked between runs. No stopping other projects.
 
 Report is provisional until grid/recipe/seeds/final test are complete. Never present smoke or unfinished 150-epoch runs as final performance.
+
+## Readable live training monitor (Windows PowerShell)
+Open a VS Code PowerShell terminal and run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\DeepLearning\Finnal\watch_training.ps1"
+```
+
+This separate viewer never starts/stops training or changes Python/config/checkpoints. It displays the grid overview, queue/child PID state, saved epoch metrics, validation exports and stderr; automatically follows the next run. Smoke metrics are excluded from the grid table. `Ctrl+C` stops only the viewer. ExecutionPolicy Bypass applies only to this process, not the machine policy.
+
+The viewer appends `outputs/study_two_models/logs/training_readable.log`; original CSV/JSON/raw logs remain authoritative. It records only while open. Observation timestamps are not original epoch timestamps; initial recent rows and stderr are labeled history. Each reopening starts a new session and may repeat historical context. Train+Val time excludes checkpoint overhead; metrics arrive per epoch, not per batch.
+
+Use `-Once` for one snapshot, `-HistoryRows 10` for more context, or `-NoFileLog` to avoid writing the readable log. `-PollCount 3` limits polling for diagnostics. No global environment or execution policy changes are needed.
