@@ -43,3 +43,14 @@ Training entry points never read official test. Freeze recipe/epoch budget, retr
 - Cutout: https://arxiv.org/abs/1708.04552 and RandAugment: https://arxiv.org/abs/1909.13719 (future regularization options, not current recipe).
 
 Full training takes hours/days. GPU thermals, other processes and commit pressure can change estimates; launching a queue is not completion or achievement of97%.
+
+## Launch sequence
+
+`D:\DeepLearning\Finnal\run_approved_training.ps1` first checks system memory (freeRAM>=1536MiB/freecommit>=5120MiB, grounded in the observed trainer footprint). It runs the protected legacy resume manifest, then the new smoke+four trials, then all remaining old jobs. A failure, budget block or stop request stops the chain; there is no automatic retry. Original old configs stay unchanged; `D:\DeepLearning\Finnal\configs\study\legacy_launch` contains equivalent absolute-path copies so the snapshot does not interpret `datasets` relative to its own directory. Queue source fingerprint still checks the snapshot byte-for-byte.
+
+```powershell
+& 'D:\DeepLearning\Finnal\run_approved_training.ps1' -PreflightOnly
+& 'D:\DeepLearning\Finnal\run_approved_training.ps1'
+```
+
+Do not launch this again if `approved_chain.lock` or a live project queue exists. Monitor new trials via `D:\DeepLearning\Finnal\outputs\study_improvement\status.json`; old runs via `D:\DeepLearning\Finnal\outputs\study_two_models\status.json`; chain progress via `D:\DeepLearning\Finnal\outputs\approved_chain_status.json`. Do not edit executable Python source while a queue using it is active.

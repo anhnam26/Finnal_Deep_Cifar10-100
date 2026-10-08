@@ -69,3 +69,15 @@ def test_excluded_run_cannot_be_reintroduced(tmp_path):
     with pytest.raises(ValueError, match="Deleted completed configs"):
         study.run_queue(path)
     assert not (tmp_path/"outputs/queue.lock").exists()
+
+
+def test_legacy_launch_paths_match_original_configs():
+    manifest = json.loads((study.ROOT/"configs/study/manifest.json").read_text())
+    for launch, original in manifest.get("original_config_paths", {}).items():
+        copy = json.loads(Path(launch).read_text())
+        supplied = json.loads(Path(original).read_text())
+        for key in ("data_root", "output_dir"):
+            value = Path(supplied[key])
+            supplied[key] = str(value if value.is_absolute() else study.ROOT/value)
+        assert copy == supplied
+        assert Path(copy["data_root"]).is_absolute()

@@ -1,13 +1,13 @@
 {
   "output_root": "D:\\DeepLearning\\Finnal\\outputs\\study_two_models",
   "smoke": [
-    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\smoke_cifar100_baseline_w0.json",
-    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\smoke_cifar100_multiscale_w0.json",
-    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\workers_cifar100_baseline_w2.json",
-    "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\workers_cifar100_multiscale_w2.json"
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\smoke_cifar100_baseline_w0.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\smoke_cifar100_multiscale_w0.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\workers_cifar100_baseline_w2.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\workers_cifar100_multiscale_w2.json"
   ],
   "grid": [
-    "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_adam_0.003_s42.json"
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\cifar10_baseline_adam_0.003_s42.json"
   ],
   "grid_epochs": 150,
   "test_evaluation": false,
@@ -31,5 +31,12 @@
     "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_adam_0.001_s42.json",
     "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_multiscale_adam_0.001_s42.json"
   ],
-  "cleanup_policy": "Completed CIFAR10 outputs/logs deleted by user request; excluded configs retained for provenance, never executed by this manifest."
+  "cleanup_policy": "Completed CIFAR10 outputs/logs deleted by user request; excluded configs retained for provenance, never executed by this manifest.",
+  "original_config_paths": {
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\smoke_cifar100_baseline_w0.json": "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\smoke_cifar100_baseline_w0.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\smoke_cifar100_multiscale_w0.json": "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\smoke_cifar100_multiscale_w0.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\workers_cifar100_baseline_w2.json": "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\workers_cifar100_baseline_w2.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\workers_cifar100_multiscale_w2.json": "D:\\DeepLearning\\Finnal\\configs\\study\\smoke\\workers_cifar100_multiscale_w2.json",
+    "D:\\DeepLearning\\Finnal\\configs\\study\\legacy_launch\\cifar10_baseline_adam_0.003_s42.json": "D:\\DeepLearning\\Finnal\\configs\\study\\grid\\cifar10_baseline_adam_0.003_s42.json"
+  }
 }
