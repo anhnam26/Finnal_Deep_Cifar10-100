@@ -8,13 +8,36 @@ import shutil
 import subprocess
 import sys
 import time
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
+ROOT = Path(__file__).resolve().parent
 
-from reporting import aggregate_study
-from utils import ROOT, load_config, source_fingerprint, write_json
+
+def write_json(path, value):
+    # Keep the supervising process stdlib-only: importing utils loads PyTorch.
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(value, indent=2, ensure_ascii=False), encoding="utf-8")
+    os.replace(temporary, path)
+
+
+def source_fingerprint(root=ROOT):
+    root = Path(root)
+    digest = hashlib.sha256()
+    for path in sorted(list(root.glob("*.py")) + list((root / "models").glob("*.py"))):
+        digest.update(str(path.relative_to(root)).encode("utf-8"))
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def queue_config(path):
+    config = json.loads(Path(path).read_text(encoding="utf-8"))
+    output = Path(config["output_dir"])
+    config["output_dir"] = str(output if output.is_absolute() else ROOT / output)
+    return config
 
 
 def now():
@@ -27,6 +50,9 @@ def completed(config):
 
 
 def measure_budget(manifest):
+    import numpy as np
+    from utils import load_config
+
     values = {0:[], 2:[]}
     detailed = []
     for path in manifest["smoke"]:
@@ -62,7 +88,14 @@ def measure_budget(manifest):
                          "peak_reserved_bytes":max(int(row["peak_reserved_bytes"]) for row in metrics)})
         if config["dataset"] == "cifar100":
             values[config["workers"]].extend(seconds)
-    medians = {key:float(np.median(val)) for key,val in values.items()}
+    medians = {key:float(np.median(val)) for key,val in values.items() if val}
+    if not medians:
+        # New CIFAR10-only trials use fixed workers0, measured on their own smoke.
+        for row in detailed:
+            values.setdefault(row["workers"], []).extend(row["epoch_wall_seconds"])
+        medians = {key:float(np.median(val)) for key,val in values.items() if val}
+    if not medians:
+        raise ValueError("No remaining smoke measurements for budget")
     selected = min(medians,key=medians.get)
     # CIFAR10 and CIFAR100 have the same input sizes; use slower matched measurement.
     chosen = [max(row["epoch_wall_seconds"]) for row in detailed if row["workers"] == selected]
@@ -78,8 +111,8 @@ def measure_budget(manifest):
             "note":"Laptop thermals and external GPU usage can change throughput. 9600-epoch estimate assumes12final runs x300epochs and adds50k/45k training adjustment separately (conservative includes val time); not a promise. Grid only; recipe/final stages require later validation decisions."}
 
 
-def execute(config_path, root, status, evaluate=True):
-    config = load_config(config_path)
+def execute(config_path, root, status, evaluate=True, source_root=ROOT):
+    config = queue_config(config_path)
     output = Path(config["output_dir"])
     logs = root/"logs"
     logs.mkdir(parents=True,exist_ok=True)
@@ -87,13 +120,13 @@ def execute(config_path, root, status, evaluate=True):
     status.update({"phase":"training", "current_run":name, "config":str(config_path), "updated_utc":now()})
     write_json(root/"status.json",status)
     if not completed(config):
-        command = [sys.executable,"-B","-u",str(ROOT/"train.py"),"--config",str(config_path)]
+        command = [sys.executable,"-B","-u",str(source_root/"train.py"),"--config",str(config_path)]
         if (output/"last.pt").exists():
             command += ["--resume",str(output/"last.pt")]
         elif output.exists() and any(output.iterdir()):
             raise RuntimeError(f"Incomplete run has no resumable checkpoint: {output}")
         with (logs/f"{name}.stdout.log").open("a",encoding="utf-8") as out, (logs/f"{name}.stderr.log").open("a",encoding="utf-8") as err:
-            process = subprocess.Popen(command,cwd=ROOT,stdout=out,stderr=err)
+            process = subprocess.Popen(command,cwd=source_root,stdout=out,stderr=err)
             status["child_pid"] = process.pid
             write_json(root/"status.json",status)
             code = process.wait()
@@ -110,9 +143,9 @@ def execute(config_path, root, status, evaluate=True):
             status.update({"phase":"exporting_validation", "updated_utc":now()})
             write_json(root/"status.json",status)
             with (logs/f"{name}.evaluation.log").open("a",encoding="utf-8") as log:
-                command = [sys.executable,"-B","-u",str(ROOT/"evaluate_full.py"),
+                command = [sys.executable,"-B","-u",str(source_root/"evaluate_full.py"),
                            "--checkpoint",str(output/"best.pt"), "--output-dir",str(destination), "--device","cuda"]
-                process = subprocess.Popen(command,cwd=ROOT,stdout=log,stderr=log)
+                process = subprocess.Popen(command,cwd=source_root,stdout=log,stderr=log)
                 status["child_pid"] = process.pid
                 write_json(root/"status.json",status)
                 code = process.wait()
@@ -127,24 +160,35 @@ def run_queue(manifest_path, stage="all"):
     manifest_path = Path(manifest_path).resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     root = Path(manifest["output_root"])
+    source_root = Path(manifest.get("source_root", ROOT)).resolve()
+    fingerprint = source_fingerprint(source_root)
+    if manifest.get("required_source_fingerprint", fingerprint) != fingerprint:
+        raise RuntimeError("Manifest source snapshot fingerprint mismatch")
     root.mkdir(parents=True,exist_ok=True)
     lock = root/"queue.lock"
     # Exclusive creation: stale locks must be examined, never blindly removed.
     with lock.open("x",encoding="utf-8") as file:
         json.dump({"pid":os.getpid(),"created_utc":now(),"manifest":str(manifest_path)},file)
     status = {"pid":os.getpid(),"started_utc":now(),"phase":"starting", "stage":stage,
-              "source_fingerprint":source_fingerprint(), "test_evaluated":False,
+              "source_fingerprint":fingerprint, "source_root":str(source_root), "test_evaluated":False,
               "completed_grid_runs":0,"total_grid_runs":len(manifest["grid"])}
+    gpu_lock = ROOT / "outputs" / "training.lock"
+    owns_gpu_lock = False
     try:
+        gpu_lock.parent.mkdir(parents=True, exist_ok=True)
+        with gpu_lock.open("x", encoding="utf-8") as file:
+            json.dump({"pid":os.getpid(), "manifest":str(manifest_path), "created_utc":now()}, file)
+        owns_gpu_lock = True
         for config_path in manifest["smoke"]:
             if (root/"STOP_AFTER_RUN").exists():
                 status["phase"] = "stopped_between_runs"
                 return
-            if source_fingerprint() != status["source_fingerprint"]:
+            if source_fingerprint(source_root) != status["source_fingerprint"]:
                 raise RuntimeError("Source changed while smoke queue running; fail-stop")
-            execute(config_path,root,status,evaluate=True)
-        budget = measure_budget(manifest)
-        write_json(root/"budget.json",budget)
+            execute(config_path,root,status,evaluate=True,source_root=source_root)
+        subprocess.run([sys.executable, "-B", str(ROOT/"study.py"),
+                        "--manifest", str(manifest_path), "--budget-only"], cwd=ROOT, check=True)
+        budget = json.loads((root/"budget.json").read_text(encoding="utf-8"))
         if stage == "smoke":
             status["phase"] = "smoke_completed"
             return
@@ -164,16 +208,17 @@ def run_queue(manifest_path, stage="all"):
                 supplied["workers"] = budget["selected_workers"]
                 write_json(path,supplied)
         write_json(root/"frozen_grid_protocol.json", {"manifest":manifest, "budget":budget,
-                   "source_fingerprint":source_fingerprint(), "test_evaluation":False})
+                   "source_fingerprint":fingerprint, "test_evaluation":False})
         for path in manifest["grid"]:
             if (root/"STOP_AFTER_RUN").exists():
                 status["phase"] = "stopped_between_runs"
                 return
-            if source_fingerprint() != status["source_fingerprint"]:
+            if source_fingerprint(source_root) != status["source_fingerprint"]:
                 raise RuntimeError("Source changed while queue running; fail-stop to preserve comparable experiments")
-            execute(path,root,status)
+            execute(path,root,status,source_root=source_root)
             status["completed_grid_runs"] += 1
-            aggregate_study(root)
+            subprocess.run([sys.executable, "-B", str(ROOT/"study.py"),
+                            "--manifest", str(manifest_path), "--report-only"], cwd=ROOT, check=True)
             write_json(root/"status.json",status)
         status["phase"] = "grid_completed_awaiting_recipe_selection"
     except BaseException as error:
@@ -183,14 +228,27 @@ def run_queue(manifest_path, stage="all"):
         status["updated_utc"] = now()
         write_json(root/"status.json",status)
         lock.unlink(missing_ok=True)
+        if owns_gpu_lock:
+            gpu_lock.unlink(missing_ok=True)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest",default=str(ROOT/"configs"/"study"/"manifest.json"))
     parser.add_argument("--stage",choices=["all","smoke"],default="all")
+    helper = parser.add_mutually_exclusive_group()
+    helper.add_argument("--budget-only", action="store_true")
+    helper.add_argument("--report-only", action="store_true")
     args = parser.parse_args()
-    run_queue(args.manifest,args.stage)
+    if args.budget_only or args.report_only:
+        manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+        if args.budget_only:
+            write_json(Path(manifest["output_root"])/"budget.json", measure_budget(manifest))
+        else:
+            from reporting import aggregate_study
+            aggregate_study(Path(manifest["output_root"]))
+    else:
+        run_queue(args.manifest,args.stage)
 
 
 if __name__ == "__main__":
