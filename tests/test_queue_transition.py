@@ -59,3 +59,13 @@ def test_remaining_manifest_never_requeues_deleted():
     excluded = set(manifest.get("excluded_completed_configs", []))
     assert not excluded.intersection(manifest["grid"] + manifest["smoke"])
     assert all(Path(p).exists() for p in excluded)
+
+
+def test_excluded_run_cannot_be_reintroduced(tmp_path):
+    path = prepare(tmp_path/"configs", tmp_path/"outputs")
+    manifest = json.loads(path.read_text())
+    manifest["excluded_completed_configs"] = [manifest["grid"][0]]
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="Deleted completed configs"):
+        study.run_queue(path)
+    assert not (tmp_path/"outputs/queue.lock").exists()

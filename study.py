@@ -159,6 +159,9 @@ def execute(config_path, root, status, evaluate=True, source_root=ROOT):
 def run_queue(manifest_path, stage="all"):
     manifest_path = Path(manifest_path).resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    excluded = set(manifest.get("excluded_completed_configs", []))
+    if excluded.intersection(manifest["grid"] + manifest["smoke"]):
+        raise ValueError("Deleted completed configs must not be in the execution queue")
     root = Path(manifest["output_root"])
     source_root = Path(manifest.get("source_root", ROOT)).resolve()
     fingerprint = source_fingerprint(source_root)

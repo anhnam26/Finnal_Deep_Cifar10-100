@@ -1,0 +1,20 @@
+{
+  "output_root": "D:\\DeepLearning\\Finnal\\outputs\\study_improvement",
+  "smoke": [
+    "D:\\DeepLearning\\Finnal\\configs\\improvement\\smoke\\smoke_v2_cifar10_baseline_cutmix_s42.json",
+    "D:\\DeepLearning\\Finnal\\configs\\improvement\\smoke\\smoke_v2_cifar10_hybrid_cutmix_s42.json"
+  ],
+  "grid": [
+    "D:\\DeepLearning\\Finnal\\configs\\improvement\\grid\\v2_cifar10_baseline_plain_sgd_0.1_s42_e300.json",
+    "D:\\DeepLearning\\Finnal\\configs\\improvement\\grid\\v2_cifar10_baseline_cutmix_sgd_0.1_s42_e300.json",
+    "D:\\DeepLearning\\Finnal\\configs\\improvement\\grid\\v2_cifar10_hybrid_plain_sgd_0.1_s42_e300.json",
+    "D:\\DeepLearning\\Finnal\\configs\\improvement\\grid\\v2_cifar10_hybrid_cutmix_sgd_0.1_s42_e300.json"
+  ],
+  "grid_epochs": 1200,
+  "test_evaluation": false,
+  "max_grid_hours": 72,
+  "budget_reserve_factor": 1.25,
+  "grid_protocol": "300epochs seed42 stratified45k/5k; validation only; architecture x CutMix ablation",
+  "worker_selection": "workers0; measured on new full-epoch CIFAR10 smoke",
+  "target": "official-test top1 >97%, aspirational, not guaranteed; freeze before final50k/test"
+}

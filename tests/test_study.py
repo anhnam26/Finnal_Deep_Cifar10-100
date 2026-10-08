@@ -228,6 +228,10 @@ def test_smoke_budget_counts_and_workers(tmp_path):
     budget=measure_budget(manifest)
     assert budget["selected_workers"] == 2
     assert budget["grid_hours_with_reserve"] == 25
+    c100_only = {**manifest, "smoke":[p for p in manifest["smoke"] if load_config(p)["dataset"] == "cifar100"]}
+    assert measure_budget(c100_only)["selected_workers"] == 2
+    c10_only = {**manifest, "smoke":[p for p in manifest["smoke"] if load_config(p)["dataset"] == "cifar10"]}
+    assert measure_budget(c10_only)["selected_workers"] == 0
     config=load_config(manifest["smoke"][0])
     file=Path(config["output_dir"])/"metrics.csv"
     frame=pd.read_csv(file)

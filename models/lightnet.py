@@ -57,16 +57,48 @@ class ResidualBlock(nn.Module):
         return self.relu2(self.add(self.bn2(self.conv2(h)), self.shortcut(x)))
 
 
+class PDPBlock(nn.Module):
+    """Expand/project channel mixing, depthwise context, SE, residual shortcut.
+
+    Established components, not a claim of a new research architecture.
+    """
+
+    def __init__(self, in_channels, channels):
+        super().__init__()
+        expanded = channels * 2
+        self.features = nn.Sequential(
+            nn.Conv2d(in_channels, expanded, 1, bias=False),
+            nn.BatchNorm2d(expanded), nn.ReLU(),
+            nn.Conv2d(expanded, expanded, 5, padding=2, groups=expanded, bias=False),
+            nn.BatchNorm2d(expanded), nn.ReLU(),
+            nn.Conv2d(expanded, channels, 1, bias=False),
+            nn.BatchNorm2d(channels),
+        )
+        hidden = max(8, channels // 16)
+        self.gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1), nn.Conv2d(channels, hidden, 1), nn.ReLU(),
+            nn.Conv2d(hidden, channels, 1), nn.Sigmoid(),
+        )
+        self.shortcut = nn.Identity() if in_channels == channels else nn.Sequential(
+            nn.Conv2d(in_channels, channels, 1, bias=False), nn.BatchNorm2d(channels))
+        self.multiply, self.add, self.relu = Multiply(), Add(), nn.ReLU()
+
+    def forward(self, x):
+        h = self.features(x)
+        return self.relu(self.add(self.multiply(h, self.gate(h)), self.shortcut(x)))
+
+
 class LightNet(nn.Module):
     """Same backbone for 10/100 classes; baseline removes late context branches."""
 
-    def __init__(self, num_classes=10, variant="multiscale", widths=(48, 96, 192, 288),
-                 depths=(2, 3, 3, 2)):
+    def __init__(self, num_classes=10, variant="multiscale", widths=None, depths=None):
         super().__init__()
+        widths = widths if widths is not None else ((48, 96, 192, 384) if variant == "hybrid" else (48, 96, 192, 288))
+        depths = depths if depths is not None else ((2, 3, 3, 4) if variant == "hybrid" else (2, 3, 3, 2))
         if num_classes not in (10, 100):
             raise ValueError("num_classes must be 10 or 100")
-        if variant not in ("baseline", "multiscale"):
-            raise ValueError("variant must be baseline or multiscale")
+        if variant not in ("baseline", "multiscale", "hybrid"):
+            raise ValueError("variant must be baseline, multiscale or hybrid")
         if len(widths) != 4 or len(depths) != 4 or min(*widths, *depths) <= 0:
             raise ValueError("widths/depths must each contain four positive integers")
         self.stem = nn.Sequential(
@@ -80,10 +112,14 @@ class LightNet(nn.Module):
             blocks = []
             for block in range(count):
                 stride = 2 if stage > 0 and block == 0 else 1
-                blocks.append(ResidualBlock(
-                    incoming, channels, stride,
-                    multiscale=variant == "multiscale" and stage >= 2,
-                ))
+                if variant == "hybrid" and stage == 3:
+                    # No third downsampling: retain 8x8 spatial evidence.
+                    blocks.append(PDPBlock(incoming, channels))
+                else:
+                    blocks.append(ResidualBlock(
+                        incoming, channels, stride,
+                        multiscale=variant == "multiscale" and stage >= 2,
+                    ))
                 incoming = channels
             stages.append(nn.Sequential(*blocks))
         self.stages = nn.Sequential(*stages)

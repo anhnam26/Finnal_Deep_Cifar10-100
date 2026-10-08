@@ -113,7 +113,7 @@ def benchmark(model, batch_size=128, steps=30, warmup=10):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--variant", choices=["baseline", "multiscale"], default="multiscale")
+    parser.add_argument("--variant", choices=["baseline", "multiscale", "hybrid"], default="multiscale")
     parser.add_argument("--classes", type=int, choices=[10, 100], default=100)
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
     parser.add_argument("--benchmark", action="store_true")
