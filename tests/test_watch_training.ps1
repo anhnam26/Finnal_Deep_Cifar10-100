@@ -38,6 +38,15 @@ try {
     Assert ($text -notmatch '\[HISTORY\] 2/3') 'unsaved row excluded'
     Assert ($text -notmatch 'partial error|old smoke failure') 'partial errors/smoke excluded'
     Assert (-not (Test-Path "$temp\logs\training_readable.log")) 'NoFileLog does not write'
+    Assert ($text -match 'BestVal%\s+Progress') 'compact progress header'
+    Assert ($text -match '\[HISTORY\] 1/3\s+0.5000\s+80.00\s+0.6000\s+70.00\s+70.00\s+33.3%') 'accurate per-epoch best and percentage'
+    Assert ($text -notmatch 'GPUalloc|AMPskip|DETAIL:') 'technical metrics hidden by default'
+    'Traceback: old memory failure' | Set-Content "$temp\logs\b.stderr.log"
+    & $viewer -StudyRoot $temp -ManifestPath "$temp\manifest.json" -PollCount 2 -IntervalSeconds 1 -NoFileLog *> "$temp\history.txt"
+    $history = Get-Content "$temp\history.txt" -Raw
+    Assert (([regex]::Matches($history, 'HISTORICAL STDERR: b.stderr.log')).Count -eq 1) 'history collapsed once'
+    Assert ($history -notmatch 'Traceback: old memory failure|\[ERROR\]') 'no historical traceback or false error'
+    Assert ((Get-Content $viewer -Raw) -notmatch "'Red'") 'no red output'
 
     # Regression: a fresh -File process must resolve defaults from its script,
     # not the caller's unrelated working directory. Fixture paths include spaces.
@@ -79,7 +88,7 @@ try {
         'second error' | Add-Content "$t\logs\a.stderr.log"
         @{ phase = 'failed'; current_run = 'b'; error = 'fixture failure' } | ConvertTo-Json | Set-Content "$t\status.json"
     }
-    & $viewer -StudyRoot $temp -ManifestPath "$temp\manifest.json" -PollCount 12 -IntervalSeconds 1 *> "$temp\watch.txt"
+    & $viewer -StudyRoot $temp -ManifestPath "$temp\manifest.json" -PollCount 12 -IntervalSeconds 1 -Details *> "$temp\watch.txt"
     $text = Get-Content "$temp\logs\training_readable.log" -Raw
     Assert (([regex]::Matches($text, '\[EPOCH\] 2/3')).Count -eq 1) 'new epoch2 once'
     Assert (([regex]::Matches($text, '\[EPOCH\] 3/3')).Count -eq 1) 'final epoch retained across switch'
@@ -97,7 +106,77 @@ try {
     Remove-Item "$temp\status.json"
     & $viewer -StudyRoot $temp -ManifestPath "$temp\manifest.json" -Once -NoFileLog *> "$temp\missing.txt"
     Assert ((Get-Content "$temp\missing.txt" -Raw) -match 'Status temporarily unavailable') 'missing status retry'
-    Write-Host 'PASS: CLI -File default paths from unrelated directory, snapshots, saved rows, run switch, export, dedup, null validation, stderr, missing/stale status, file logging.'
+
+    # Isolated two-study chain: completed smoke does not mark long trials trained.
+    $newRoot = "$temp\improvement"
+    [void](New-Item -ItemType Directory "$newRoot\logs", "$newRoot\trial_plain", "$newRoot\trial_cutmix" -Force)
+    $plain = @{ output_dir = "$newRoot\trial_plain"; epochs = 3; dataset = 'cifar10'; variant = 'hybrid'; optimizer = 'sgd'; lr = 0.1 }
+    $cutmix = @{ output_dir = "$newRoot\trial_cutmix"; epochs = 3; dataset = 'cifar10'; variant = 'hybrid'; optimizer = 'sgd'; lr = 0.1; cutmix_alpha = 1; cutmix_probability = 0.5 }
+    Json "$newRoot\plain.json" $plain; Json "$newRoot\cutmix.json" $cutmix
+    Json "$newRoot\manifest.json" @{ grid = @("$newRoot\plain.json", "$newRoot\cutmix.json"); output_root = $newRoot }
+    Json "$temp\status.json" @{ phase = 'grid_completed_awaiting_recipe_selection'; current_run = 'a' }
+    Json "$newRoot\status.json" @{ phase = 'smoke_completed'; stage = 'smoke'; current_run = 'smoke_hybrid' }
+    Json "$temp\chain.json" @{ phase = 'running_queue'; manifest = "$temp\manifest.json"; pid = $PID }
+    'old supervisor traceback' | Set-Content "$temp\approved_chain.stderr.log"
+    $argsView = @{ StudyRoot = $temp; ManifestPath = "$temp\manifest.json"; AdditionalManifestPaths = @("$newRoot\manifest.json"); ChainStatusPath = "$temp\chain.json"; NoFileLog = $true }
+    & $viewer @argsView -Once *> "$temp\chain_smoke.txt"
+    $text = Get-Content "$temp\chain_smoke.txt" -Raw
+    Assert ($text -match 'SMOKE ONLY') 'smoke explicitly separate'
+    Assert ($text -match 'trial_plain\s+waiting\s+0/3' -and $text -match 'trial_cutmix\s+waiting\s+0/3') 'new names waiting before outputs'
+    Assert ($text -notmatch 'METRICS: smoke') 'no smoke metrics as long run'
+    Assert ($text -match 'HISTORICAL STDERR: approved_chain.stderr.log' -and $text -notmatch 'old supervisor traceback') 'chain stderr followed and collapsed'
+    # Default discovery also works in a fresh CLI from an unrelated directory.
+    [void](New-Item -ItemType Directory "$cliRoot\configs\improvement" -Force)
+    Copy-Item "$newRoot\manifest.json" "$cliRoot\configs\improvement\manifest.json"
+    Push-Location $cwd
+    try {
+        $cliText = (& "$PSHOME\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$cliRoot\watch_training.ps1" -Once -NoFileLog) -join "`n"
+        Assert ($LASTEXITCODE -eq 0) 'CLI automatic improvement discovery succeeds'
+    } finally { Pop-Location }
+    Assert ($cliText -match 'trial_plain\s+waiting') 'default invocation discovers new experiments'
+
+    Remove-Job $job -Force; $job = $null
+    # Same live viewer follows the chain into improvement, captures final epoch,
+    # then displays an actual failure without dumping the traceback by default.
+    $job = Start-Job -ArgumentList $temp, $newRoot, $PID -ScriptBlock {
+        param($t, $n, $livePid)
+        Start-Sleep -Seconds 2
+        @{ phase = 'running_queue'; manifest = "$n\manifest.json"; pid = $livePid } | ConvertTo-Json | Set-Content "$t\chain.json"
+        @{ phase = 'training'; current_run = 'trial_plain'; pid = $livePid; child_pid = $livePid } | ConvertTo-Json | Set-Content "$n\status.json"
+        $m = Import-Csv "$t\a\metrics.csv" | Select-Object -First 1
+        $m | Export-Csv "$n\trial_plain\metrics.csv" -NoTypeInformation
+        @{ completed_epochs = 1; best_validation_accuracy = 70 } | ConvertTo-Json | Set-Content "$n\trial_plain\summary.json"
+        Start-Sleep -Seconds 2
+        $m.epoch = '3'; $m.validation_accuracy = '72'
+        $m | Export-Csv "$n\trial_plain\metrics.csv" -NoTypeInformation -Append
+        @{ completed_epochs = 3; best_validation_accuracy = 72 } | ConvertTo-Json | Set-Content "$n\trial_plain\summary.json"
+        [void](New-Item -ItemType Directory "$n\trial_plain\evaluation_validation")
+        '{}' | Set-Content "$n\trial_plain\evaluation_validation\complete.json"
+        @{ phase = 'training'; current_run = 'trial_cutmix'; pid = $livePid } | ConvertTo-Json | Set-Content "$n\status.json"
+        $m.epoch = '1'; $m | Export-Csv "$n\trial_cutmix\metrics.csv" -NoTypeInformation
+        @{ completed_epochs = 1; best_validation_accuracy = 72 } | ConvertTo-Json | Set-Content "$n\trial_cutmix\summary.json"
+        Start-Sleep -Seconds 2
+        "Traceback: new failure`nRuntimeError: fixture" | Set-Content "$n\logs\trial_cutmix.stderr.log"
+        @{ phase = 'failed'; current_run = 'trial_cutmix'; error = 'confirmed fixture failure' } | ConvertTo-Json | Set-Content "$n\status.json"
+        @{ phase = 'failed_or_blocked'; error = 'chain fixture failure' } | ConvertTo-Json | Set-Content "$t\chain.json"
+        'new supervisor error' | Add-Content "$t\approved_chain.stderr.log"
+    }
+    & $viewer @argsView -PollCount 12 -IntervalSeconds 1 *> "$temp\chain_watch.txt"
+    $text = Get-Content "$temp\chain_watch.txt" -Raw
+    Assert ($text -match 'trial_plain\s+running') 'new trial becomes running'
+    Assert ($text -match 'trial_plain\s+completed') 'new trial completion visible'
+    Assert ($text -match 'RUN COMPLETE \+ VALIDATION EXPORT: trial_plain') 'new export event'
+    Assert ($text -match '\[EPOCH\] 3/3') 'last saved epoch captured during transition'
+    Assert ($text -match 'METRICS: trial_cutmix.*CutMix') 'new trial recipe visible'
+    Assert ($text -match 'trial_cutmix\s+failed' -and $text -match 'confirmed fixture failure') 'confirmed failure distinct from warning'
+    Assert ($text -match 'CHAIN STOPPED: chain fixture failure') 'chain blocked/failure visible'
+    Assert ($text -match 'NEW STDERR: approved_chain.stderr.log') 'new supervisor stderr followed'
+    Assert ($text -match 'NEW STDERR: trial_cutmix.stderr.log') 'newly created stderr not classified as history'
+    Assert (([regex]::Matches($text, 'NEW STDERR: trial_cutmix.stderr.log')).Count -eq 1) 'new stderr deduplicated'
+    Assert ($text -notmatch 'HISTORICAL STDERR: trial_cutmix.stderr.log') 'fresh traceback not hidden as old history'
+    Assert ($text -notmatch 'Traceback: new failure|RuntimeError: fixture') 'default failure output collapsed'
+    Wait-Job $job | Out-Null; Receive-Job $job -ErrorAction Stop | Out-Null
+    Write-Host 'PASS: CLI paths/discovery, compact metrics, named waiting/running/completed/failed trials, smoke separation, chain transitions, exports, dedup, null validation, historical/new stderr, missing/stale status, file logging.'
 } finally {
     if ($job) { Remove-Job $job -Force -ErrorAction SilentlyContinue }
     if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }
