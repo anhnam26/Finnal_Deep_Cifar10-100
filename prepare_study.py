@@ -1,69 +1,72 @@
-"""Create variant-aware configs in a new location. Does not train."""
+"""Prepare C100-first architecture screening or the exam LR matrix; never train."""
 
 import argparse
 from pathlib import Path
 
-from utils import DEFAULT_CONFIG, ROOT, validate_config, write_json
+from utils import DEFAULT_CONFIG, ROOT, source_fingerprint, validate_config, write_json
 
 
-def prepare(destination, output_root):
+def prepare(destination, output_root, mode="screen", matrix_variant="fusion"):
     destination, output_root = Path(destination).resolve(), Path(output_root).resolve()
-    if destination.exists() and any(destination.iterdir()):
-        raise FileExistsError(f"Refusing to overwrite {destination}")
-    planned, grid, smoke = [], [], []
-    for dataset in ("cifar10", "cifar100"):
-        for variant in ("baseline", "multiscale"):
-            name = f"smoke_{dataset}_{variant}_w0"
-            config = {**DEFAULT_CONFIG, "dataset":dataset, "variant":variant, "epochs":2,
-                      "warmup_epochs":0, "workers":0, "device":"cuda",
-                      "optimizer":"sgd" if dataset == "cifar10" else "adam",
-                      "lr":.1 if dataset == "cifar10" else .001,
-                      "weight_decay":5e-4 if dataset == "cifar10" else 1e-4,
-                      "output_dir":str(output_root / "smoke" / name)}
-            path = destination / "smoke" / f"{name}.json"
-            smoke.append(str(path))
-            planned.append((path,config))
-    for variant in ("baseline","multiscale"):
-        name = f"workers_cifar100_{variant}_w2"
-        config = {**DEFAULT_CONFIG, "dataset":"cifar100", "variant":variant, "epochs":2,
-                  "warmup_epochs":0, "workers":2, "device":"cuda",
-                  "optimizer":"adam", "lr":.001, "weight_decay":1e-4,
-                  "output_dir":str(output_root / "smoke" / name)}
-        path = destination / "smoke" / f"{name}.json"
-        smoke.append(str(path))
-        planned.append((path,config))
-    # Interleave variants within each optimizer/LR to reduce temporal order bias.
-    for dataset in ("cifar10", "cifar100"):
-        for optimizer, rates in (("sgd",(.05,.1,.15)),("adam",(.0003,.001,.003))):
-            for lr in rates:
-                for variant in ("baseline","multiscale"):
-                    name = f"{dataset}_{variant}_{optimizer}_{lr:g}_s42"
-                    config = {**DEFAULT_CONFIG, "dataset":dataset, "variant":variant,
-                              "optimizer":optimizer, "lr":lr,
-                              "weight_decay":5e-4 if optimizer == "sgd" else 1e-4,
-                              "device":"cuda", "output_dir":str(output_root / "runs" / name)}
-                    path = destination / "grid" / f"{name}.json"
-                    grid.append(str(path))
-                    planned.append((path,config))
-    for path,config in planned:
+    if mode not in ("screen", "matrix") or matrix_variant not in ("fusion", "no_fusion"):
+        raise ValueError("Invalid study mode/variant")
+    for location in (destination, output_root):
+        if location.exists() and any(location.iterdir()):
+            raise FileExistsError(f"Refusing to overwrite/reuse {location}")
+    planned, smoke, grid = [], [], []
+    base = {**DEFAULT_CONFIG, "workers": 0, "device": "cuda",
+            "data_root": str(ROOT / "datasets")}
+
+    def add(kind, dataset, variant, optimizer, lr, epochs):
+        name = f"v4_{dataset}_{variant}_{optimizer}_{lr:g}_s42_e{epochs}"
+        config = {**base, "dataset": dataset, "variant": variant, "optimizer": optimizer,
+                  "lr": lr, "epochs": epochs, "warmup_epochs": 0 if kind == "smoke" else 5,
+                  "weight_decay": 5e-4 if optimizer == "sgd" else 1e-4,
+                  "output_dir": str(output_root / ("smoke" if kind == "smoke" else "runs") / name)}
+        path = destination / kind / f"{name}.json"
         validate_config(config)
-    for path,config in planned:
-        write_json(path,config)
-    manifest = {"output_root":str(output_root), "smoke":smoke, "grid":grid,
-                "grid_epochs":3600, "test_evaluation":False,
-                "worker_selection":"median full-epoch wall time w0/w2 on CIFAR100, same workers for all grid runs",
-                "grid_protocol":"150epochs seed42, fixed stratified45k/5k, no test tuning",
-                "max_grid_hours":168, "budget_reserve_factor":1.25}
-    write_json(destination / "manifest.json",manifest)
+        planned.append((path, config))
+        (smoke if kind == "smoke" else grid).append(str(path))
+
+    variants = ("no_fusion", "fusion") if mode == "screen" else (matrix_variant,)
+    for dataset in ("cifar100", "cifar10"):
+        for variant in variants:
+            add("smoke", dataset, variant, "sgd", .1, 2)
+    if mode == "screen":
+        for variant in variants:
+            add("grid", "cifar100", variant, "sgd", .1, 150)
+    else:
+        for dataset in ("cifar100", "cifar10"):
+            for optimizer, rates in (("sgd", (.05, .1, .15)), ("adam", (.0003, .001, .003))):
+                for lr in rates:
+                    add("grid", dataset, matrix_variant, optimizer, lr, 150)
+    for path, config in planned:
+        write_json(path, config)
+    manifest = {
+        "output_root": str(output_root), "source_root": str(ROOT),
+        "required_source_fingerprint": source_fingerprint(), "smoke": smoke, "grid": grid,
+        "grid_epochs": sum(config["epochs"] for path, config in planned if str(path) in grid),
+        "test_evaluation": False, "max_grid_hours": 24 if mode == "screen" else 72,
+        "budget_reserve_factor": 1.25, "mode": mode,
+        "worker_selection": "fixed workers0; full45k/5k smoke on both datasets",
+        "grid_protocol": "150epochs seed42 split2026 crop/flip; identical screening recipe, only fusion differs",
+        "selection_rule": "Validation-only screening; regenerate matrix for selected architecture/recipe before launch",
+        "target": "C10~98%/C100~95% validation are aspirational, not measured or guaranteed",
+    }
+    write_json(destination / "manifest.json", manifest)
     return destination / "manifest.json"
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--destination",default=str(ROOT / "configs" / "study"))
-    parser.add_argument("--output-root",default=str(ROOT / "outputs" / "study_two_models"))
+    parser.add_argument("--mode", choices=["screen", "matrix"], default="screen")
+    parser.add_argument("--variant", choices=["fusion", "no_fusion"], default="fusion")
+    parser.add_argument("--destination")
+    parser.add_argument("--output-root")
     args = parser.parse_args()
-    print(prepare(args.destination,args.output_root))
+    directory = "candidate" if args.mode == "screen" else "candidate_matrix"
+    print(prepare(args.destination or ROOT / "configs" / directory,
+                  args.output_root or ROOT / "outputs" / directory, args.mode, args.variant))
 
 
 if __name__ == "__main__":

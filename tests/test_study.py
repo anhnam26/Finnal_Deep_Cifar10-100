@@ -195,10 +195,10 @@ def test_export_and_aggregate(tmp_path):
 def test_variant_grid_and_no_overwrite(tmp_path):
     manifest_path=prepare(tmp_path/"configs",tmp_path/"outputs")
     manifest=json.loads(manifest_path.read_text())
-    assert len(manifest["grid"]) == 24
-    assert len(manifest["smoke"]) == 6
+    assert len(manifest["grid"]) == 2
+    assert len(manifest["smoke"]) == 4
     configs=[load_config(path) for path in manifest["grid"]]
-    assert len({(c["dataset"],c["variant"],c["optimizer"],c["lr"]) for c in configs}) == 24
+    assert len({(c["dataset"],c["variant"],c["optimizer"],c["lr"]) for c in configs}) == 2
     assert all(c["epochs"] == 150 and c["split_seed"] == 2026 and c["seed"] == 42
                and c["max_train_batches"] is None and c["max_val_batches"] is None for c in configs)
     assert all(not c["full_train"] for c in configs)
@@ -226,10 +226,10 @@ def test_smoke_budget_counts_and_workers(tmp_path):
         pd.DataFrame([{"epoch":e,"epoch_wall_seconds":20 if config["workers"] == 2 else 40}
                       for e in (1,2)]).to_csv(output/"timing.csv",index=False)
     budget=measure_budget(manifest)
-    assert budget["selected_workers"] == 2
-    assert budget["grid_hours_with_reserve"] == 25
+    assert budget["selected_workers"] == 0
+    assert budget["grid_hours_with_reserve"] == pytest.approx(40*300/3600*1.25)
     c100_only = {**manifest, "smoke":[p for p in manifest["smoke"] if load_config(p)["dataset"] == "cifar100"]}
-    assert measure_budget(c100_only)["selected_workers"] == 2
+    assert measure_budget(c100_only)["selected_workers"] == 0
     c10_only = {**manifest, "smoke":[p for p in manifest["smoke"] if load_config(p)["dataset"] == "cifar10"]}
     assert measure_budget(c10_only)["selected_workers"] == 0
     config=load_config(manifest["smoke"][0])

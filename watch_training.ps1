@@ -25,10 +25,10 @@ if ([string]::IsNullOrWhiteSpace($projectRoot)) {
     $projectRoot = Split-Path -Parent $scriptPath
 }
 if ([string]::IsNullOrWhiteSpace($StudyRoot)) {
-    $StudyRoot = Join-Path $projectRoot 'outputs\study_two_models'
+    $StudyRoot = Join-Path $projectRoot 'outputs\candidate'
 }
 if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
-    $ManifestPath = Join-Path $projectRoot 'configs\study\manifest.json'
+    $ManifestPath = Join-Path $projectRoot 'configs\candidate\manifest.json'
 }
 $culture = [System.Globalization.CultureInfo]::InvariantCulture
 $readable = Join-Path $StudyRoot 'logs\training_readable.log'
@@ -127,11 +127,8 @@ if (-not $NoFileLog) {
 }
 $manifestPaths = @($ManifestPath) + $AdditionalManifestPaths
 if ($autoDiscover) {
-    $improvement = Join-Path $projectRoot 'configs\improvement\manifest.json'
+    $improvement = Join-Path $projectRoot 'configs\candidate_matrix\manifest.json'
     if (Test-Path -LiteralPath $improvement) { $manifestPaths += $improvement }
-    $redesign = Join-Path $projectRoot 'configs\redesign\manifest.json'
-    if (Test-Path -LiteralPath $redesign) { $manifestPaths += $redesign }
-    if (-not $ChainStatusPath) { $ChainStatusPath = Join-Path $projectRoot 'outputs\approved_chain_status.json' }
 }
 $studies = @()
 foreach ($manifestFile in ($manifestPaths | Select-Object -Unique)) {

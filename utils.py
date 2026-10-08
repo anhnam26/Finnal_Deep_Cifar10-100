@@ -99,7 +99,7 @@ def cutmix(images, targets, alpha):
 
 
 DEFAULT_CONFIG = {
-    "dataset": "cifar10", "variant": "multiscale", "optimizer": "sgd", "lr": 0.1,
+    "dataset": "cifar10", "variant": "fusion", "optimizer": "sgd", "lr": 0.1,
     "epochs": 150, "warmup_epochs": 5, "min_lr": 0.00001,
     "batch_size": 128, "workers": 2, "seed": 42, "split_seed": 2026,
     "momentum": 0.9, "nesterov": True, "weight_decay": 0.0005,
@@ -128,7 +128,7 @@ def load_config(path, overrides=None):
 def validate_config(config):
     if config["dataset"] not in ("cifar10", "cifar100"):
         raise ValueError("Unknown dataset")
-    if config["variant"] not in ("baseline", "multiscale", "hybrid", "preact"):
+    if config["variant"] not in ("fusion", "no_fusion"):
         raise ValueError("Unknown variant")
     if config["optimizer"] not in ("sgd", "adam"):
         raise ValueError("Only SGD/Adam supported")

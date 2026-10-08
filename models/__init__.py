@@ -1,3 +1,5 @@
-from .lightnet import LightNet
+from .stagefusion import StageFusionNet
 
-__all__ = ["LightNet"]
+# Keep the existing training/evaluation entrypoint interface, not old weights.
+LightNet = StageFusionNet
+__all__ = ["StageFusionNet", "LightNet"]

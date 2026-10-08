@@ -237,7 +237,7 @@ def run_queue(manifest_path, stage="all"):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest",default=str(ROOT/"configs"/"study"/"manifest.json"))
+    parser.add_argument("--manifest",default=str(ROOT/"configs"/"candidate"/"manifest.json"))
     parser.add_argument("--stage",choices=["all","smoke"],default="all")
     helper = parser.add_mutually_exclusive_group()
     helper.add_argument("--budget-only", action="store_true")

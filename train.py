@@ -150,7 +150,7 @@ def run(config, resume=None):
     if not profile["within_limits"]:
         raise ValueError("Model exceeds final-exam limits")
     optimizer = build_optimizer(model, config)
-    scaler = torch.amp.GradScaler("cuda", enabled=config["amp"] and device.type == "cuda")
+    scaler = torch.amp.GradScaler("cuda", init_scale=4096., enabled=config["amp"] and device.type == "cuda")
     train_loader, val_loader, split = build_train_loaders(config, device.type == "cuda")
     start_epoch, best_accuracy = 0, -1.0
     if checkpoint:
@@ -199,6 +199,7 @@ def run(config, resume=None):
             "scheduler": "per-step linear warmup then cosine; epoch-boundary resume",
             "accuracy_note": "Train accuracy is lambda-weighted when CutMix is used; validation is hard-label top-1.",
             "weight_decay_scope": "all learnable parameters",
+            "amp_initial_scale": 4096.,
             "source_fingerprint": fingerprint,
             "cudnn_benchmark": torch.backends.cudnn.benchmark,
             "cudnn_deterministic": torch.backends.cudnn.deterministic,

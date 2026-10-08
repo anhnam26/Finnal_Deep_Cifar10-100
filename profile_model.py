@@ -1,4 +1,4 @@
-"""Transparent inference count for every operation used in LightNet.
+"""Transparent inference count for every operation used in StageFusionNet.
 
 Conv/linear multiply-add = 2 FLOPs. BN inference = 4 scalar ops/element
 (unfused upper estimate). Sigmoid = 4 scalar ops/element including exp
@@ -15,14 +15,14 @@ import torch
 from torch import nn
 
 from models import LightNet
-from models.lightnet import Add, Multiply
+from models.stagefusion import Add, Multiply
 
 
 def profile_operations(model, input_shape=(1, 3, 32, 32)):
     counts = {"macs": 0, "other_flops": 0}
     handles = []
     supported = (nn.Conv2d, nn.Linear, nn.BatchNorm2d, nn.ReLU, nn.Sigmoid,
-                 nn.AdaptiveAvgPool2d, nn.Identity, Add, Multiply)
+                  nn.AdaptiveAvgPool2d, nn.Identity, nn.LayerNorm, Add, Multiply)
 
     def hook(module, inputs, output):
         elements = output.numel()
@@ -34,6 +34,11 @@ def profile_operations(model, input_shape=(1, 3, 32, 32)):
             counts["other_flops"] += elements if module.bias is not None else 0
         elif isinstance(module, nn.BatchNorm2d):
             counts["other_flops"] += 4 * elements
+        elif isinstance(module, nn.LayerNorm):
+            # Conservative scalar convention: mean, centered variance,
+            # epsilon/rsqrt, normalization and affine. Not hardware latency.
+            groups = elements // int(np.prod(module.normalized_shape))
+            counts["other_flops"] += 8 * elements + 3 * groups
         elif isinstance(module, (nn.ReLU, Add, Multiply)):
             counts["other_flops"] += elements
         elif isinstance(module, nn.Sigmoid):
@@ -64,7 +69,7 @@ def profile_operations(model, input_shape=(1, 3, 32, 32)):
         "input_shape": list(input_shape), "learnable_parameters": parameters,
         **counts, "flops": flops,
         "within_limits": parameters <= 6_000_000 and flops < 1_000_000_000,
-        "convention": "Conv/Linear: 2 FLOPs/MAC; BN: 4/element; ReLU/add/mul: 1; sigmoid: 4; GAP: N/channel. No memory costs; unfused inference.",
+        "convention": "Conv/Linear: 2 FLOPs/MAC; BN: 4/element; LayerNorm: 8/element+3/group; ReLU/add/mul: 1; sigmoid: 4; GAP: N/channel. Flatten/memory costs ignored; unfused inference.",
     }
 
 
@@ -113,7 +118,7 @@ def benchmark(model, batch_size=128, steps=30, warmup=10):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--variant", choices=["baseline", "multiscale", "hybrid", "preact"], default="multiscale")
+    parser.add_argument("--variant", choices=["fusion", "no_fusion"], default="fusion")
     parser.add_argument("--classes", type=int, choices=[10, 100], default=100)
     parser.add_argument("--device", choices=["cpu", "cuda"], default="cpu")
     parser.add_argument("--benchmark", action="store_true")

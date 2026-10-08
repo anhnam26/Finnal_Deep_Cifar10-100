@@ -282,11 +282,11 @@ def aggregate_study(root):
         # Compare matched architecture ablations only, not independently tuned winners.
         for path_a, result_a in results:
             a = result_a["metadata"]
-            if a.get("variant") != "baseline" or not a.get("run_completed"):
+            if a.get("variant") != "no_fusion" or not a.get("run_completed"):
                 continue
             for path_b, result_b in results:
                 b = result_b["metadata"]
-                if b.get("variant") != "multiscale" or not b.get("run_completed"):
+                if b.get("variant") != "fusion" or not b.get("run_completed"):
                     continue
                 if any(a.get(key) != b.get(key) for key in ("dataset","split","optimizer","lr","seed","configured_epochs")):
                     continue

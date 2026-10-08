@@ -40,7 +40,7 @@ def main():
         "epochs": 2, "warmup_epochs": 0,
     }
     optimizer = build_optimizer(model, config)
-    scaler = torch.amp.GradScaler("cuda", enabled=device.type == "cuda")
+    scaler = torch.amp.GradScaler("cuda", init_scale=4096., enabled=device.type == "cuda")
     results = [train_epoch(model, loader, optimizer, scaler, config, device, epoch) for epoch in range(2)]
     write_json(output, {
         "synthetic_only": True, "device": str(device), "optimizer": args.optimizer,

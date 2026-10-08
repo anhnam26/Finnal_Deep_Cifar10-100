@@ -26,7 +26,7 @@ def reproducible():
 
 
 @pytest.mark.parametrize("classes", [10, 100])
-@pytest.mark.parametrize("variant", ["baseline", "multiscale"])
+@pytest.mark.parametrize("variant", ["fusion", "no_fusion"])
 def test_model_shapes_gradients_and_limits(classes, variant):
     model = LightNet(classes, variant)
     report = profile_operations(model)
@@ -112,7 +112,7 @@ def test_evaluation_sample_weighting():
 
 
 def test_tiny_overfit_and_checkpoint_identity(tmp_path):
-    model = LightNet(10, widths=(8, 12, 16, 24), depths=(1, 1, 1, 1))
+    model = LightNet(10, widths=(8, 12, 24), depths=(1, 1, 1))
     images, labels = torch.randn(8, 3, 32, 32), torch.arange(8)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.02)
     first_loss = None
@@ -130,7 +130,7 @@ def test_tiny_overfit_and_checkpoint_identity(tmp_path):
     assert loss.item() < first_loss * 0.1
     checkpoint = tmp_path / "weights.pt"
     torch.save(model.state_dict(), checkpoint)
-    restored = LightNet(10, widths=(8, 12, 16, 24), depths=(1, 1, 1, 1)).eval()
+    restored = LightNet(10, widths=(8, 12, 24), depths=(1, 1, 1)).eval()
     restored.load_state_dict(torch.load(checkpoint, weights_only=True))
     with torch.inference_mode():
         assert torch.equal(output, restored(images))
@@ -158,7 +158,7 @@ def test_cuda_amp_training(optimizer_name):
               "warmup_epochs": 0, "lr": 0.001 if optimizer_name == "adam" else 0.1}
     loader = make_loader(TensorDataset(torch.randn(16, 3, 32, 32), torch.arange(16)), 8, 0)
     optimizer = train.build_optimizer(model, config)
-    scaler = torch.amp.GradScaler("cuda")
+    scaler = torch.amp.GradScaler("cuda", init_scale=4096.)
     result = train.train_epoch(model, loader, optimizer, scaler, config, torch.device("cuda"), 0)
     assert np.isfinite(result["train_loss"])
     assert result["train_samples"] == 16
@@ -210,7 +210,7 @@ def test_test_evaluation_requires_explicit_confirmation(tmp_path):
 
 def test_grid_covers_required_experiments():
     root = Path(__file__).resolve().parents[1]
-    paths = list((root / "configs" / "grid").glob("*.json"))
+    paths = list((root / "configs" / "candidate_matrix" / "grid").glob("*.json"))
     assert len(paths) == 12
     actual = set()
     for path in paths:
@@ -242,7 +242,7 @@ def test_epoch_resume_is_identical(tmp_path, monkeypatch, optimizer_name):
 
     monkeypatch.setattr(train, "build_train_loaders", fake_loaders)
     monkeypatch.setattr(train, "LightNet", lambda classes, variant: LightNet(
-        classes, variant, widths=(8, 12, 16, 24), depths=(1, 1, 1, 1)))
+        classes, variant, widths=(8, 12, 24), depths=(1, 1, 1)))
     config = {
         **DEFAULT_CONFIG, "optimizer": optimizer_name, "epochs": 2, "warmup_epochs": 0,
         "device": "cpu", "workers": 0, "deterministic": True,

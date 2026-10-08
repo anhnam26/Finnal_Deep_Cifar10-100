@@ -1,4 +1,4 @@
-# Standalone PowerShell5.1 tests. Fixtures never touch the live queue or GPU.
+﻿# Standalone PowerShell5.1 tests. Fixtures never touch the live queue or GPU.
 $ErrorActionPreference = 'Stop'
 $viewer = Join-Path (Split-Path $PSScriptRoot -Parent) 'watch_training.ps1'
 $temp = Join-Path ([System.IO.Path]::GetTempPath()) ('lightnet_monitor_' + [guid]::NewGuid())
@@ -52,13 +52,13 @@ try {
     # not the caller's unrelated working directory. Fixture paths include spaces.
     $cliRoot = Join-Path $temp 'cli project with spaces'
     $cwd = Join-Path $temp 'unrelated working directory'
-    [void](New-Item -ItemType Directory "$cliRoot\configs\study", "$cliRoot\outputs\study_two_models", $cwd -Force)
+    [void](New-Item -ItemType Directory "$cliRoot\configs\candidate", "$cliRoot\outputs\candidate", $cwd -Force)
     Copy-Item $viewer "$cliRoot\watch_training.ps1"
-    Copy-Item "$temp\manifest.json" "$cliRoot\configs\study\manifest.json"
-    Copy-Item "$temp\status.json" "$cliRoot\outputs\study_two_models\status.json"
-    [void](New-Item -ItemType Directory "$cliRoot\configs\redesign", "$cliRoot\outputs\study_redesign" -Force)
-    Json "$cliRoot\configs\redesign\manifest.json" @{ output_root = "$cliRoot\outputs\study_redesign"; grid = @("$temp\b.json") }
-    Json "$cliRoot\outputs\study_redesign\status.json" @{ phase = 'starting'; current_run = 'b'; pid = $PID }
+    Copy-Item "$temp\manifest.json" "$cliRoot\configs\candidate\manifest.json"
+    Copy-Item "$temp\status.json" "$cliRoot\outputs\candidate\status.json"
+    [void](New-Item -ItemType Directory "$cliRoot\configs\candidate_matrix", "$cliRoot\outputs\candidate_matrix" -Force)
+    Json "$cliRoot\configs\candidate_matrix\manifest.json" @{ output_root = "$cliRoot\outputs\candidate_matrix"; grid = @("$temp\b.json") }
+    Json "$cliRoot\outputs\candidate_matrix\status.json" @{ phase = 'starting'; current_run = 'b'; pid = $PID }
     Push-Location $cwd
     try {
         $cliOutput = & "$PSHOME\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$cliRoot\watch_training.ps1" -Once -NoFileLog 2>&1
@@ -67,7 +67,7 @@ try {
     $cliText = $cliOutput -join "`n"
     Assert ($cliExit -eq 0) "fresh -File defaults succeed: $cliText"
     Assert ($cliText -match 'GRID OVERVIEW' -and $cliText -match '\[HISTORY\] 1/3') 'CLI reads default manifest/status from script directory'
-    Assert ($cliText -match 'STUDY: study_redesign' -and $cliText -match 'b\s+running') 'CLI discovers redesigned queue without extra flags'
+    Assert ($cliText -match 'STUDY: candidate_matrix' -and $cliText -match 'b\s+running') 'CLI discovers candidate matrix without extra flags'
     Assert (-not (Test-Path "$cwd\outputs")) 'CLI does not create paths under caller directory'
 
     # Background fixture writer changes epochs, exports and the active run.
@@ -130,8 +130,8 @@ try {
     Assert ($text -notmatch 'METRICS: smoke') 'no smoke metrics as long run'
     Assert ($text -match 'HISTORICAL STDERR: approved_chain.stderr.log' -and $text -notmatch 'old supervisor traceback') 'chain stderr followed and collapsed'
     # Default discovery also works in a fresh CLI from an unrelated directory.
-    [void](New-Item -ItemType Directory "$cliRoot\configs\improvement" -Force)
-    Copy-Item "$newRoot\manifest.json" "$cliRoot\configs\improvement\manifest.json"
+    [void](New-Item -ItemType Directory "$cliRoot\configs\candidate_matrix" -Force)
+    Copy-Item "$newRoot\manifest.json" "$cliRoot\configs\candidate_matrix\manifest.json"
     Push-Location $cwd
     try {
         $cliText = (& "$PSHOME\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "$cliRoot\watch_training.ps1" -Once -NoFileLog) -join "`n"
