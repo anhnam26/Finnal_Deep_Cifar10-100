@@ -128,7 +128,7 @@ def load_config(path, overrides=None):
 def validate_config(config):
     if config["dataset"] not in ("cifar10", "cifar100"):
         raise ValueError("Unknown dataset")
-    if config["variant"] not in ("baseline", "multiscale", "hybrid"):
+    if config["variant"] not in ("baseline", "multiscale", "hybrid", "preact"):
         raise ValueError("Unknown variant")
     if config["optimizer"] not in ("sgd", "adam"):
         raise ValueError("Only SGD/Adam supported")

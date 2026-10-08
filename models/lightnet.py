@@ -88,31 +88,72 @@ class PDPBlock(nn.Module):
         return self.relu(self.add(self.multiply(h, self.gate(h)), self.shortcut(x)))
 
 
+class PreActivationBlock(nn.Module):
+    """BN/ReLU before convolutions; unactivated identity path between blocks.
+
+    Projection consumes preactivated input only when shape changes (He et al.,
+    Identity Mappings in Deep Residual Networks). No attention/depthwise branch.
+    """
+
+    def __init__(self, in_channels, channels, stride=1):
+        super().__init__()
+        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.relu1 = nn.ReLU(inplace=False)
+        self.conv1 = nn.Conv2d(in_channels, channels, 3, stride, 1, bias=False)
+        self.bn2 = nn.BatchNorm2d(channels)
+        self.relu2 = nn.ReLU(inplace=False)
+        self.conv2 = nn.Conv2d(channels, channels, 3, padding=1, bias=False)
+        self.project = stride != 1 or in_channels != channels
+        self.shortcut = (nn.Conv2d(in_channels, channels, 1, stride, bias=False)
+                         if self.project else nn.Identity())
+        self.add = Add()
+
+    def forward(self, x):
+        activated = self.relu1(self.bn1(x))
+        shortcut = self.shortcut(activated if self.project else x)
+        residual = self.conv2(self.relu2(self.bn2(self.conv1(activated))))
+        return self.add(residual, shortcut)
+
+
 class LightNet(nn.Module):
     """Same backbone for 10/100 classes; baseline removes late context branches."""
 
     def __init__(self, num_classes=10, variant="multiscale", widths=None, depths=None):
         super().__init__()
-        widths = widths if widths is not None else ((48, 96, 192, 384) if variant == "hybrid" else (48, 96, 192, 288))
-        depths = depths if depths is not None else ((2, 3, 3, 4) if variant == "hybrid" else (2, 3, 3, 2))
+        if variant == "preact":
+            default_widths, default_depths = (40, 104, 248), (2, 3, 4)
+        elif variant == "hybrid":
+            default_widths, default_depths = (48, 96, 192, 384), (2, 3, 3, 4)
+        else:
+            default_widths, default_depths = (48, 96, 192, 288), (2, 3, 3, 2)
+        widths = widths if widths is not None else default_widths
+        depths = depths if depths is not None else default_depths
         if num_classes not in (10, 100):
             raise ValueError("num_classes must be 10 or 100")
-        if variant not in ("baseline", "multiscale", "hybrid"):
-            raise ValueError("variant must be baseline, multiscale or hybrid")
-        if len(widths) != 4 or len(depths) != 4 or min(*widths, *depths) <= 0:
-            raise ValueError("widths/depths must each contain four positive integers")
-        self.stem = nn.Sequential(
-            nn.Conv2d(3, widths[0], 3, padding=1, bias=False),
-            nn.BatchNorm2d(widths[0]),
-            nn.ReLU(),
-        )
+        if variant not in ("baseline", "multiscale", "hybrid", "preact"):
+            raise ValueError("variant must be baseline, multiscale, hybrid or preact")
+        stage_count = 3 if variant == "preact" else 4
+        if (len(widths) != stage_count or len(depths) != stage_count
+                or any(not isinstance(value, int) or isinstance(value, bool) or value <= 0
+                       for value in (*widths, *depths))):
+            raise ValueError(f"widths/depths must each contain {stage_count} positive integers")
+        if variant == "preact":
+            self.stem = nn.Conv2d(3, widths[0], 3, padding=1, bias=False)
+        else:
+            self.stem = nn.Sequential(
+                nn.Conv2d(3, widths[0], 3, padding=1, bias=False),
+                nn.BatchNorm2d(widths[0]),
+                nn.ReLU(),
+            )
         stages = []
         incoming = widths[0]
         for stage, (channels, count) in enumerate(zip(widths, depths)):
             blocks = []
             for block in range(count):
                 stride = 2 if stage > 0 and block == 0 else 1
-                if variant == "hybrid" and stage == 3:
+                if variant == "preact":
+                    blocks.append(PreActivationBlock(incoming, channels, stride))
+                elif variant == "hybrid" and stage == 3:
                     # No third downsampling: retain 8x8 spatial evidence.
                     blocks.append(PDPBlock(incoming, channels))
                 else:
@@ -123,6 +164,8 @@ class LightNet(nn.Module):
                 incoming = channels
             stages.append(nn.Sequential(*blocks))
         self.stages = nn.Sequential(*stages)
+        self.final_activation = (nn.Sequential(nn.BatchNorm2d(widths[-1]), nn.ReLU())
+                                 if variant == "preact" else nn.Identity())
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.classifier = nn.Linear(widths[-1], num_classes)
         self.apply(self._initialize)
@@ -141,4 +184,5 @@ class LightNet(nn.Module):
             nn.init.zeros_(module.bias)
 
     def forward(self, x):
-        return self.classifier(torch.flatten(self.pool(self.stages(self.stem(x))), 1))
+        features = self.final_activation(self.stages(self.stem(x)))
+        return self.classifier(torch.flatten(self.pool(features), 1))
