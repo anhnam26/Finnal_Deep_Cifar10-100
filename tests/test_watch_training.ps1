@@ -176,7 +176,47 @@ try {
     Assert ($text -notmatch 'HISTORICAL STDERR: trial_cutmix.stderr.log') 'fresh traceback not hidden as old history'
     Assert ($text -notmatch 'Traceback: new failure|RuntimeError: fixture') 'default failure output collapsed'
     Wait-Job $job | Out-Null; Receive-Job $job -ErrorAction Stop | Out-Null
+    Remove-Job $job -Force; $job = $null
+
+    # Reminder interval counts NEW emitted epochs, not history or repeated polls.
+    $reminderRoot = "$temp\reminders"
+    [void](New-Item -ItemType Directory "$reminderRoot\active", "$reminderRoot\hybrid_waiting" -Force)
+    Json "$reminderRoot\active.json" @{ output_dir = "$reminderRoot\active"; epochs = 30; dataset = 'cifar10'; variant = 'baseline'; optimizer = 'sgd'; lr = 0.1 }
+    Json "$reminderRoot\hybrid.json" @{ output_dir = "$reminderRoot\hybrid_waiting"; epochs = 30; dataset = 'cifar10'; variant = 'hybrid'; optimizer = 'sgd'; lr = 0.1; cutmix_alpha = 1; cutmix_probability = 0.5 }
+    Json "$reminderRoot\manifest.json" @{ grid = @("$reminderRoot\active.json", "$reminderRoot\hybrid.json") }
+    Json "$reminderRoot\status.json" @{ phase = 'training'; current_run = 'active'; pid = $PID }
+    Json "$reminderRoot\active\summary.json" @{ completed_epochs = 5; best_validation_accuracy = 70 }
+    @(1..6 | ForEach-Object { Metric $_ }) | Export-Csv "$reminderRoot\active\metrics.csv" -NoTypeInformation
+    & $viewer -StudyRoot $reminderRoot -ManifestPath "$reminderRoot\manifest.json" -PollCount 2 -IntervalSeconds 1 -NoFileLog *> "$temp\reminder_history.txt"
+    $text = Get-Content "$temp\reminder_history.txt" -Raw
+    Assert ($text -notmatch 'EXPERIMENT REMINDER:|\[HISTORY\] 6/30') 'five history rows and unsaved CSV row do not trigger reminder'
+    Assert (([regex]::Matches($text, 'GRID OVERVIEW')).Count -eq 1) 'idle polls do not duplicate overview'
+    $job = Start-Job -ArgumentList $reminderRoot -ScriptBlock {
+        param($r)
+        $m = Import-Csv "$r\active\metrics.csv" | Select-Object -First 1
+        foreach ($end in @(9, 10, 15, 25)) {
+            Start-Sleep -Seconds 2
+            # Write all CSV rows first, publish the saved boundary last.
+            $metrics = @(1..$end | ForEach-Object { $copy = $m.PSObject.Copy(); $copy.epoch = [string]$_; $copy })
+            $metrics | Export-Csv "$r\active\metrics.csv" -NoTypeInformation
+            @{ completed_epochs = $end; best_validation_accuracy = 70 } | ConvertTo-Json | Set-Content "$r\active\summary.json"
+        }
+    }
+    & $viewer -StudyRoot $reminderRoot -ManifestPath "$reminderRoot\manifest.json" -PollCount 15 -IntervalSeconds 1 -NoFileLog *> "$temp\reminder_watch.txt"
+    $text = Get-Content "$temp\reminder_watch.txt" -Raw
+    Assert (([regex]::Matches($text, 'EXPERIMENT REMINDER: active')).Count -eq 3) 'reminders at five/ten new epochs and one batched catch-up'
+    Assert (([regex]::Matches($text, 'GRID OVERVIEW')).Count -eq 4) 'overview initial plus three reminders, no poll spam'
+    Assert (([regex]::Matches($text, 'METRICS: active.*baseline.*Plain')).Count -eq 4) 'model and recipe header repeated with each reminder'
+    Assert (([regex]::Matches($text, 'Epoch\s+TrainLoss')).Count -eq 4) 'metric column headers repeated'
+    Assert (([regex]::Matches($text, 'hybrid_waiting\s+waiting\s+0/30')).Count -eq 4) 'waiting Hybrid stays visible in repeated tables'
+    Assert (([regex]::Matches($text, '\[EPOCH\] 6/30')).Count -eq 1) 'previously unsaved row emitted once when saved'
+    Assert ($text.IndexOf('EXPERIMENT REMINDER:') -gt $text.IndexOf('[EPOCH] 10/30')) 'first four new epochs do not trigger reminder'
+    foreach ($epoch in @(10, 15, 25)) {
+        Assert ($text -match "SAVED PROGRESS: $epoch/30") "reminder shows latest saved progress $epoch"
+    }
+    Wait-Job $job | Out-Null; Receive-Job $job -ErrorAction Stop | Out-Null
     Write-Host 'PASS: CLI paths/discovery, compact metrics, named waiting/running/completed/failed trials, smoke separation, chain transitions, exports, dedup, null validation, historical/new stderr, missing/stale status, file logging.'
+    Write-Host 'PASS: five-new-epoch reminders, repeated model/column headers, waiting Hybrid visibility, history/unsaved-row exclusion, idle-poll dedup and batched catch-up.'
 } finally {
     if ($job) { Remove-Job $job -Force -ErrorAction SilentlyContinue }
     if (Test-Path $temp) { Remove-Item $temp -Recurse -Force }

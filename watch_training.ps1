@@ -33,6 +33,7 @@ if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
 $culture = [System.Globalization.CultureInfo]::InvariantCulture
 $readable = Join-Path $StudyRoot 'logs\training_readable.log'
 $epochSeen = @{}
+$newEpochCounts = @{}
 $errorSeen = @{}
 $errorLast = @{}
 $runStates = @{}
@@ -115,6 +116,12 @@ function Show-Overview($Runs, $Status, $Label) {
     }
 }
 
+function Show-MetricHeader($Run) {
+    Emit "METRICS: $($Run.Name) | $($Run.Config.dataset) | $($Run.Config.variant) | $(Recipe $Run.Config) | $($Run.Config.optimizer) | Initial LR $(Number $Run.Config.lr 'G6')" 'EVENT'
+    Emit "SAVED PROGRESS: $($Run.Summary.completed_epochs)/$($Run.Config.epochs) | Best validation $(Number $Run.Summary.best_validation_accuracy)%"
+    Emit 'Epoch    TrainLoss TrainAcc%   ValLoss  ValAcc%  BestVal%   Progress Train+Val(s)'
+}
+
 if (-not $NoFileLog) {
     [void](New-Item -ItemType Directory -Force -Path (Split-Path $readable))
 }
@@ -150,6 +157,7 @@ Emit 'History is labeled; new epochs appear once per session. Ctrl+C stops ONLY 
 Emit 'Metrics update after saved epochs, not batches. Train+Val excludes checkpoint overhead.'
 Emit 'Smoke completion is NOT long-run completion. Historical stderr is collapsed; new stderr is a warning, not proof of failure.'
 Emit 'Default view: compact metrics, neutral colors. -Details includes LR/AMP/VRAM and stderr text.'
+Emit 'Experiment overview and model header repeat every 5 new saved epochs of the current training run.'
 if (-not $NoFileLog) { Emit "Readable log: $readable" }
 
 $poll = 0
@@ -234,14 +242,13 @@ do {
             $isHistory = -not $epochSeen.ContainsKey($runKey)
             if ($isHistory) {
                 $epochSeen[$runKey] = 0
+                $newEpochCounts[$runKey] = 0
                 $rows = @($rows | Select-Object -Last $HistoryRows)
             }
             foreach ($m in $rows) {
                 if ([int]$m.epoch -le $epochSeen[$runKey]) { continue }
                 if ($lastMetricRun -ne $runKey) {
-                    Emit "METRICS: $($run.Name) | $($run.Config.dataset) | $($run.Config.variant) | $(Recipe $run.Config) | $($run.Config.optimizer) | Initial LR $(Number $run.Config.lr 'G6')" 'EVENT'
-                    Emit "SAVED PROGRESS: $($run.Summary.completed_epochs)/$($run.Config.epochs) | Best validation $(Number $run.Summary.best_validation_accuracy)% | Recent $HistoryRows epochs on entry"
-                    Emit 'Epoch    TrainLoss TrainAcc%   ValLoss  ValAcc%  BestVal%   Progress Train+Val(s)'
+                    Show-MetricHeader $run
                     $lastMetricRun = $runKey
                 }
                 $seconds = [double]::Parse($m.train_seconds, $culture) + [double]::Parse($m.validation_seconds, $culture)
@@ -257,6 +264,15 @@ do {
                     (Number (100.0 * [int]$m.epoch / $run.Config.epochs) 'F1'), (Number $seconds 'F1')) $kind
                 if ($Details) { Emit "DETAIL: LR $(Number $m.lr_last 'G6') | AMPskip $($m.skipped_amp_steps) | GPU $(Number $allocated 'F0')/$(Number $reserved 'F0') MiB allocated/reserved" $kind }
                 $epochSeen[$runKey] = [int]$m.epoch
+                if (-not $isHistory) { $newEpochCounts[$runKey]++ }
+            }
+            if ($run.Name -eq $status.current_run -and $status.phase -eq 'training' -and $newEpochCounts[$runKey] -ge 5) {
+                # Batch catch-up into one overview per poll; never count initial history.
+                Emit "EXPERIMENT REMINDER: $($run.Name) | after 5 new saved epochs (batched if catching up)" 'EVENT'
+                Show-Overview $runs $status $study.Label
+                Show-MetricHeader $run
+                $lastMetricRun = $runKey
+                $newEpochCounts[$runKey] = $newEpochCounts[$runKey] % 5
             }
         }
     }
