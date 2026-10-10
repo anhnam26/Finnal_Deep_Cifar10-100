@@ -15,10 +15,11 @@ def prepare(destination, output_root, mode="screen", matrix_variant="fusion"):
             raise FileExistsError(f"Refusing to overwrite/reuse {location}")
     planned, smoke, grid = [], [], []
     base = {**DEFAULT_CONFIG, "workers": 0, "device": "cuda",
+            "cutmix_alpha": 1., "cutmix_probability": .5,
             "data_root": str(ROOT / "datasets")}
 
     def add(kind, dataset, variant, optimizer, lr, epochs):
-        name = f"v4_{dataset}_{variant}_{optimizer}_{lr:g}_s42_e{epochs}"
+        name = f"v5_{dataset}_{variant}_{optimizer}_{lr:g}_s42_e{epochs}"
         config = {**base, "dataset": dataset, "variant": variant, "optimizer": optimizer,
                   "lr": lr, "epochs": epochs, "warmup_epochs": 0 if kind == "smoke" else 5,
                   "weight_decay": 5e-4 if optimizer == "sgd" else 1e-4,
@@ -28,13 +29,14 @@ def prepare(destination, output_root, mode="screen", matrix_variant="fusion"):
         planned.append((path, config))
         (smoke if kind == "smoke" else grid).append(str(path))
 
-    variants = ("no_fusion", "fusion") if mode == "screen" else (matrix_variant,)
+    variants = ("fusion", "no_fusion") if mode == "screen" else (matrix_variant,)
     for dataset in ("cifar100", "cifar10"):
         for variant in variants:
             add("smoke", dataset, variant, "sgd", .1, 2)
     if mode == "screen":
-        for variant in variants:
-            add("grid", "cifar100", variant, "sgd", .1, 150)
+        for dataset in ("cifar100", "cifar10"):
+            for variant in variants:
+                add("grid", dataset, variant, "sgd", .1, 300)
     else:
         for dataset in ("cifar100", "cifar10"):
             for optimizer, rates in (("sgd", (.05, .1, .15)), ("adam", (.0003, .001, .003))):
@@ -49,7 +51,8 @@ def prepare(destination, output_root, mode="screen", matrix_variant="fusion"):
         "test_evaluation": False, "max_grid_hours": 24 if mode == "screen" else 72,
         "budget_reserve_factor": 1.25, "mode": mode,
         "worker_selection": "fixed workers0; full45k/5k smoke on both datasets",
-        "grid_protocol": "150epochs seed42 split2026 crop/flip; identical screening recipe, only fusion differs",
+        "architecture": "ScaleGateNet widths40/120/320 depths2/3/4; fusion=local gates, no_fusion=gate ablation",
+        "grid_protocol": "screen300/matrix150epochs seed42 split2026 crop/flip+CutMix(alpha1,p0.5); no AutoAugment in first pair; only gates differ",
         "selection_rule": "Validation-only screening; regenerate matrix for selected architecture/recipe before launch",
         "target": "C10~98%/C100~95% validation are aspirational, not measured or guaranteed",
     }
@@ -64,7 +67,7 @@ def main():
     parser.add_argument("--destination")
     parser.add_argument("--output-root")
     args = parser.parse_args()
-    directory = "candidate" if args.mode == "screen" else "candidate_matrix"
+    directory = "scalegate" if args.mode == "screen" else "scalegate_matrix"
     print(prepare(args.destination or ROOT / "configs" / directory,
                   args.output_root or ROOT / "outputs" / directory, args.mode, args.variant))
 

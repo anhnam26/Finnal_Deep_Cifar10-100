@@ -54,8 +54,8 @@ def test_execute_uses_legacy_source(tmp_path, monkeypatch):
     assert calls[0][1] == source
 
 
-def test_remaining_manifest_never_requeues_deleted():
-    manifest = json.loads((study.ROOT/"configs/candidate/manifest.json").read_text())
+def test_remaining_manifest_never_requeues_deleted(tmp_path):
+    manifest = json.loads(prepare(tmp_path/"configs", tmp_path/"outputs").read_text())
     excluded = set(manifest.get("excluded_completed_configs", []))
     assert not excluded.intersection(manifest["grid"] + manifest["smoke"])
     assert all(Path(p).exists() for p in excluded)
@@ -71,8 +71,8 @@ def test_excluded_run_cannot_be_reintroduced(tmp_path):
     assert not (tmp_path/"outputs/queue.lock").exists()
 
 
-def test_candidate_paths_are_absolute():
-    manifest = json.loads((study.ROOT/"configs/candidate/manifest.json").read_text())
+def test_candidate_paths_are_absolute(tmp_path):
+    manifest = json.loads(prepare(tmp_path/"configs", tmp_path/"outputs").read_text())
     for path in manifest["grid"] + manifest["smoke"]:
         config = json.loads(Path(path).read_text())
         assert Path(config["data_root"]).is_absolute()

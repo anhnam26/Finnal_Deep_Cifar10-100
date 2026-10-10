@@ -105,7 +105,7 @@ DEFAULT_CONFIG = {
     "momentum": 0.9, "nesterov": True, "weight_decay": 0.0005,
     "betas": [0.9, 0.999], "eps": 1e-8, "label_smoothing": 0.0,
     "cutmix_alpha": 0.0, "cutmix_probability": 0.0,
-    "augment": True, "amp": True, "deterministic": False,
+    "augment": True, "autoaugment": False, "amp": True, "deterministic": False,
     "download": False, "full_train": False,
     "data_root": "datasets", "output_dir": "outputs/cifar10_sgd_0.1",
     "device": "auto", "max_train_batches": None, "max_val_batches": None,
@@ -126,6 +126,10 @@ def load_config(path, overrides=None):
 
 
 def validate_config(config):
+    if not isinstance(config.get("autoaugment", False), bool):
+        raise ValueError("autoaugment must be boolean")
+    if config.get("autoaugment", False) and not config["augment"]:
+        raise ValueError("AutoAugment requires training augmentation")
     if config["dataset"] not in ("cifar10", "cifar100"):
         raise ValueError("Unknown dataset")
     if config["variant"] not in ("fusion", "no_fusion"):

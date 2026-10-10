@@ -12,8 +12,8 @@ from torch.utils.data import TensorDataset
 
 import train
 from data import make_loader
-from models import StageFusionNet
-from models.stagefusion import ResidualUnit
+from models import ScaleGateNet
+from models.scalegate import ScaleUnit, ChannelGate
 from prepare_study import prepare
 from profile_model import profile_operations
 from utils import DEFAULT_CONFIG, load_config
@@ -21,27 +21,28 @@ from utils import DEFAULT_CONFIG, load_config
 
 def test_stage_shapes_and_ablation_path():
     torch.set_num_threads(2)
-    model = StageFusionNet().eval()
-    plain = StageFusionNet(variant="no_fusion").eval()
+    model = ScaleGateNet().eval()
+    plain = ScaleGateNet(variant="no_fusion").eval()
     plain.load_state_dict({k: v for k, v in model.state_dict().items() if k in plain.state_dict()})
     x = torch.randn(2, 3, 32, 32)
     h = model.stem(x)
-    for stage, width, size in zip(model.stages, (40, 104, 240), (32, 16, 8)):
+    for stage, width, size in zip(model.stages, (40, 120, 320), (32, 16, 8)):
         h = stage(h)
         assert h.shape == (2, width, size, size)
-    for gate in model.gates:
-        nn.init.zeros_(gate[0].weight)
-        nn.init.constant_(gate[0].bias, -1000.)
+    for gate in model.modules():
+        if isinstance(gate, ChannelGate):
+            nn.init.zeros_(gate.expand.weight)
+            nn.init.zeros_(gate.expand.bias)
     with torch.inference_mode():
         assert torch.equal(model(x), plain(x))
-    block = ResidualUnit(4, 4).eval()
-    nn.init.zeros_(block.conv2.weight)
+    block = ScaleUnit(4, 4).eval()
+    nn.init.zeros_(block.mix.weight)
     negative = -torch.ones(2, 4, 8, 8)
     assert torch.equal(block(negative), negative)
 
 
 def test_layernorm_and_broadcast_profiler():
-    from models.stagefusion import Multiply
+    from models.operations import Multiply
     assert profile_operations(nn.LayerNorm(8), (2, 8))["flops"] == 8 * 16 + 3 * 2
 
     class Gate(nn.Module):
@@ -62,16 +63,20 @@ def test_layernorm_and_broadcast_profiler():
 @pytest.mark.parametrize("variant", ["fusion", "no_fusion"])
 def test_reject_invalid_layout_and_old_variants(variant):
     with pytest.raises(ValueError, match="3 positive"):
-        StageFusionNet(10, variant, (40, 104), (2, 3))
+        ScaleGateNet(10, variant, (40, 104), (2, 3))
     with pytest.raises(ValueError, match="variant"):
-        StageFusionNet(10, "baseline")
+        ScaleGateNet(10, "baseline")
+    with pytest.raises(ValueError, match="divisible"):
+        ScaleGateNet(10, variant, (8, 10, 24), (1, 1, 1))
 
 
 def test_screen_and_matrix_configs(tmp_path):
     screen = json.loads(prepare(tmp_path / "screen", tmp_path / "screen_out").read_text())
-    left, right = [load_config(p) for p in screen["grid"]]
+    left, right = [load_config(p) for p in screen["grid"][:2]]
     assert {k for k in left if left[k] != right[k]} == {"variant", "output_dir"}
-    assert left["dataset"] == "cifar100" and screen["grid_epochs"] == 300
+    assert left["dataset"] == "cifar100" and screen["grid_epochs"] == 1200
+    assert len(screen["grid"]) == 4
+    assert left["cutmix_probability"] == .5 and not left["autoaugment"]
     assert not screen["test_evaluation"]
     matrix = json.loads(prepare(tmp_path / "matrix", tmp_path / "matrix_out", "matrix").read_text())
     configs = [load_config(p) for p in matrix["grid"]]
@@ -99,7 +104,7 @@ def test_resume_identity(tmp_path, monkeypatch, device, optimizer, variant):
                 {"fingerprint": "synthetic-fixed", "train_indices": list(range(8)), "validation_indices": []})
 
     monkeypatch.setattr(train, "build_train_loaders", loaders)
-    monkeypatch.setattr(train, "LightNet", lambda classes, choice: StageFusionNet(
+    monkeypatch.setattr(train, "LightNet", lambda classes, choice: ScaleGateNet(
         classes, choice, widths=(8, 12, 24), depths=(1, 1, 1)))
     config = {**DEFAULT_CONFIG, "variant": variant, "optimizer": optimizer,
               "lr": .01 if optimizer == "sgd" else .001, "epochs": 2, "warmup_epochs": 0,

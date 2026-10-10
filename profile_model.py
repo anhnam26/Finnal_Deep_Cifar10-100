@@ -1,4 +1,4 @@
-"""Transparent inference count for every operation used in StageFusionNet.
+"""Transparent inference count for every operation used in ScaleGateNet.
 
 Conv/linear multiply-add = 2 FLOPs. BN inference = 4 scalar ops/element
 (unfused upper estimate). Sigmoid = 4 scalar ops/element including exp
@@ -15,7 +15,7 @@ import torch
 from torch import nn
 
 from models import LightNet
-from models.stagefusion import Add, Multiply
+from models.operations import Add, Multiply
 
 
 def profile_operations(model, input_shape=(1, 3, 32, 32)):

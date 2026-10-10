@@ -1,5 +1,5 @@
-from .stagefusion import StageFusionNet
+from .scalegate import ScaleGateNet
 
 # Keep the existing training/evaluation entrypoint interface, not old weights.
-LightNet = StageFusionNet
-__all__ = ["StageFusionNet", "LightNet"]
+LightNet = ScaleGateNet
+__all__ = ["ScaleGateNet", "LightNet"]

@@ -44,12 +44,15 @@ def split_fingerprint(train, val):
     return digest.hexdigest()
 
 
-def build_transforms(dataset, augment=True):
+def build_transforms(dataset, augment=True, autoaugment=False):
     mean, std = STATS[dataset]
     basic = [transforms.ToTensor(), transforms.Normalize(mean, std)]
+    if autoaugment and not augment:
+        raise ValueError("AutoAugment requires training augmentation")
+    policy = [transforms.AutoAugment(transforms.AutoAugmentPolicy.CIFAR10)] if autoaugment else []
     train = transforms.Compose(
         ([transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip()]
-         if augment else []) + basic
+         if augment else []) + policy + basic
     )
     return train, transforms.Compose(basic)
 
@@ -73,7 +76,7 @@ def build_train_loaders(config, use_cuda=False):
     name = config["dataset"]
     cls, num_classes = DATASETS[name]
     root = Path(config["data_root"])
-    train_tf, eval_tf = build_transforms(name, config["augment"])
+    train_tf, eval_tf = build_transforms(name, config["augment"], config.get("autoaugment", False))
     source = cls(root=str(root), train=True, download=config["download"], transform=train_tf)
     if config["full_train"]:
         train_indices, val_indices = list(range(len(source))), []
