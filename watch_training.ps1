@@ -25,10 +25,10 @@ if ([string]::IsNullOrWhiteSpace($projectRoot)) {
     $projectRoot = Split-Path -Parent $scriptPath
 }
 if ([string]::IsNullOrWhiteSpace($StudyRoot)) {
-    $StudyRoot = Join-Path $projectRoot 'outputs\candidate'
+    $StudyRoot = Join-Path $projectRoot 'outputs\scalegate'
 }
 if ([string]::IsNullOrWhiteSpace($ManifestPath)) {
-    $ManifestPath = Join-Path $projectRoot 'configs\candidate\manifest.json'
+    $ManifestPath = Join-Path $projectRoot 'configs\scalegate\manifest.json'
 }
 $culture = [System.Globalization.CultureInfo]::InvariantCulture
 $readable = Join-Path $StudyRoot 'logs\training_readable.log'
@@ -127,7 +127,7 @@ if (-not $NoFileLog) {
 }
 $manifestPaths = @($ManifestPath) + $AdditionalManifestPaths
 if ($autoDiscover) {
-    $improvement = Join-Path $projectRoot 'configs\candidate_matrix\manifest.json'
+    $improvement = Join-Path $projectRoot 'configs\scalegate_matrix\manifest.json'
     if (Test-Path -LiteralPath $improvement) { $manifestPaths += $improvement }
 }
 $studies = @()

@@ -1,0 +1,27 @@
+{
+  "output_root": "D:\\DeepLearning\\Finnal\\outputs\\scalegate",
+  "source_root": "D:\\DeepLearning\\Finnal",
+  "required_source_fingerprint": "9a4fd7528bf908f30c23963b0d6a42e35d13504a7e9f5f2607394ee5c9f9482f",
+  "smoke": [
+    "D:\\DeepLearning\\Finnal\\configs\\scalegate\\smoke\\v5_cifar100_fusion_sgd_0.1_s42_e2.json",
+    "D:\\DeepLearning\\Finnal\\configs\\scalegate\\smoke\\v5_cifar100_no_fusion_sgd_0.1_s42_e2.json",
+    "D:\\DeepLearning\\Finnal\\configs\\scalegate\\smoke\\v5_cifar10_fusion_sgd_0.1_s42_e2.json",
+    "D:\\DeepLearning\\Finnal\\configs\\scalegate\\smoke\\v5_cifar10_no_fusion_sgd_0.1_s42_e2.json"
+  ],
+  "grid": [
+    "D:\\DeepLearning\\Finnal\\configs\\scalegate\\grid\\v5_cifar100_fusion_sgd_0.1_s42_e300.json",
+    "D:\\DeepLearning\\Finnal\\configs\\scalegate\\grid\\v5_cifar100_no_fusion_sgd_0.1_s42_e300.json",
+    "D:\\DeepLearning\\Finnal\\configs\\scalegate\\grid\\v5_cifar10_fusion_sgd_0.1_s42_e300.json",
+    "D:\\DeepLearning\\Finnal\\configs\\scalegate\\grid\\v5_cifar10_no_fusion_sgd_0.1_s42_e300.json"
+  ],
+  "grid_epochs": 1200,
+  "test_evaluation": false,
+  "max_grid_hours": 24,
+  "budget_reserve_factor": 1.25,
+  "mode": "screen",
+  "worker_selection": "fixed workers0; full45k/5k smoke on both datasets",
+  "architecture": "ScaleGateNet widths40/120/320 depths2/3/4; fusion=local gates, no_fusion=gate ablation",
+  "grid_protocol": "screen300/matrix150epochs seed42 split2026 crop/flip+CutMix(alpha1,p0.5); no AutoAugment in first pair; only gates differ",
+  "selection_rule": "Validation-only screening; regenerate matrix for selected architecture/recipe before launch",
+  "target": "C10~98%/C100~95% validation are aspirational, not measured or guaranteed"
+}

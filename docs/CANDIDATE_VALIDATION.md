@@ -1,3 +1,5 @@
+> **RETIRED session16:** historical evidence only. Old weights/config entrypoints deleted; do not execute launch/resume commands below. Current design: `D:\DeepLearning\Finnal\docs\SCALEGATE_RESEARCH.md`.
+
 # StageFusionNet — implementation and smoke evidence
 
 Root: `D:\DeepLearning\Finnal`. Measured on the existing Python3.13/PyTorch2.7.1+cu118 environment and RTX4060 Laptop8GB. These measurements validate feasibility and execution, **not final accuracy or fusion superiority**.

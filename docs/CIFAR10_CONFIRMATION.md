@@ -1,3 +1,5 @@
+> **RETIRED session16:** historical evidence only. Old weights/config entrypoints deleted; do not execute launch/resume commands below. Current design: `D:\DeepLearning\Finnal\docs\SCALEGATE_RESEARCH.md`.
+
 # Matched CIFAR-10 architecture confirmation
 
 Project root: `D:\DeepLearning\Finnal`.

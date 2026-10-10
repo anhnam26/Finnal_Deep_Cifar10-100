@@ -208,9 +208,10 @@ def test_test_evaluation_requires_explicit_confirmation(tmp_path):
     assert not (tmp_path / "test.json").exists()
 
 
-def test_grid_covers_required_experiments():
-    root = Path(__file__).resolve().parents[1]
-    paths = list((root / "configs" / "candidate_matrix" / "grid").glob("*.json"))
+def test_grid_covers_required_experiments(tmp_path):
+    from prepare_study import prepare
+    manifest = json.loads(prepare(tmp_path/"configs", tmp_path/"outputs", "matrix").read_text())
+    paths = manifest["grid"]
     assert len(paths) == 12
     actual = set()
     for path in paths:

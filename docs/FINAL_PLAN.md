@@ -19,19 +19,19 @@ Cần hỏi giảng viên: quy ước FLOPs; metric xếp hạng; quy định k�
 ## 3. Chiến lược mô hình
 CNN residual chuyên cho 32x32; stem 3x3 stride 1, không max pooling đầu; tăng kênh khi downsample; global average pooling; một backbone, head 10/100 lớp.
 
-Ứng viên hiện tại: StageFusionNet; các kiến trúc thử nghiệm cũ đã được retire.
+Ứng viên hiện tại: ScaleGateNet; StageFusionNet đã retire vì chưa đạt mục tiêu. Xem `D:\DeepLearning\Finnal\docs\SCALEGATE_RESEARCH.md` cho nguồn tham khảo, đo tài nguyên và protocol mới.
 
 | Thành phần | Resolution | Channels | Blocks |
 |---|---:|---:|---:|
 | Stem | 32 | 40 | 1 conv |
 | Stage 1 | 32 | 40 | 2 |
-| Stage 2 | 16 | 104 | 3 |
-| Stage 3 | 8 | 240 | 4 |
-| Stage descriptors + classifier | 1 | 240 | 10/100 outputs |
+| Stage 2 | 16 | 120 | 3 |
+| Stage 3 | 8 | 320 | 4 |
+| GAP + classifier | 1 | 320 | 10/100 outputs |
 
-Block: BN/ReLU -> conv3x3 -> BN/ReLU -> conv3x3 -> shortcut add, không post-add ReLU. Downsample ở conv thứ nhất và projection shortcut. Descriptor mỗi stage: BN/ReLU/GAP -> projection 240 chiều -> LayerNorm. Fusion: descriptor cuối cộng hai descriptor sớm được gate theo ảnh. no_fusion bỏ riêng early descriptors/gates.
+Block: BN/ReLU -> dense3x3 -> BN/ReLU -> four hierarchical3x3 channel splits -> BN/ReLU -> dense1x1 -> optional channel gate -> shortcut add. Downsample ở conv đầu và projection shortcut. Stage2/3 có gate nếu variant fusion; no_fusion bỏ gate, không đổi backbone. Không stage-descriptor fusion.
 
-Giả thuyết: các descriptor sớm giữ bằng chứng chi tiết bổ sung cho descriptor cuối. Phải kiểm chứng validation/ablation, không mặc định tăng accuracy. Residual/GAP/gating là thành phần đã biết; không tuyên bố phát minh mới. Architecture cần giảng viên xác nhận không trùng.
+Giả thuyết: multiscale trong block và channel recalibration cải thiện biểu diễn dưới budget. Phải kiểm chứng validation/ablation, không mặc định tăng accuracy. Residual, Res2Net và SE là ý tưởng đã biết được trích dẫn; không tuyên bố phát minh mới. Architecture cần giảng viên xác nhận không trùng nhóm khác.
 
 Tối đa ba ứng viên: baseline, multi-scale, điều chỉnh nhẹ ứng viên tốt hơn. Sàng lọc CIFAR-100, xác nhận CIFAR-10. Mục tiêu khoảng 4.5–5.7M params, 0.65–0.90 GFLOPs nhưng số thực đo mới quyết định. Không tối giản quá mức nếu mất accuracy, không vượt giới hạn.
 
@@ -57,7 +57,7 @@ Khởi đầu batch 128, AMP nếu ổn định, 150 epochs, warmup 5 epochs và
 ## 7. Cải thiện recipe
 Sau baseline: CutMix -> smoothing nhẹ nếu cần -> WD -> EMA nếu còn ngân sách -> longer schedule. Không bật mọi thứ đồng thời. CutMix lambda dùng diện tích patch thực sau clip; training accuracy phải chú thích weighted. EMA cần xử lý BN buffers đúng nếu triển khai.
 
-Ablation ít nhất trên CIFAR-100: bỏ stage fusion; sau đó recipe controls (CutMix, augmentation, EMA nếu triển khai). Xác nhận trên C10. Ghi params/FLOPs và thời gian.
+Ablation trên cả CIFAR-100/CIFAR-10: bỏ local gate; sau đó recipe controls. Phiên16 chạy matched300epochs crop/flip+CutMix(alpha1,p0.5), không AutoAugment/smoothing/EMA. Các đoạn grid150/plain bên trên là protocol khảo sát ban đầu, không phải cấu hình phiên16. Ghi params/FLOPs và thời gian.
 
 ## 8. Budget và timeline
 Đo epoch time, images/s, peak VRAM sau warmup. Tổng giờ = sum(epochs x epoch_time) + validation/checkpoint; giữ 20–30% dự phòng.
