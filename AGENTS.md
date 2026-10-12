@@ -7,13 +7,17 @@ Keep official test sealed during architecture/HPO/recipe/model selection. Freeze
 the final recipe and epoch count, retrain on all training images, then test once.
 Record source/config/split/environment/seed and preserve resumable experiments.
 
-Use the user's existing Microsoft Store Python 3.13. Do not download another
-Python interpreter, create `.venv`, change the selected IDE interpreter, install
-global packages, install global skills/plugins or edit `~/.codex` / `~/.agents`.
-Missing dependencies belong in `.deps`; entry points add it to their import
-path. Use `python scripts/setup_environment.py` only when dependencies are
-missing. Reuse the existing dataset under `datasets/`. Generated artifacts stay
-under this repository. Never automatically launch long training during setup.
+Use ONLY `C:\Users\anhna\AppData\Local\Microsoft\WindowsApps\python3.13.exe`,
+the user's existing Microsoft Store Python 3.13, and its own installed packages.
+Follow the user-wide Python policy in `C:\Users\anhna\.codex\AGENTS.md`.
+Never create/download/use another interpreter, venv, conda, pipx/uv/Poetry tool
+environment, `.deps` or alternate third-party package directory. Do not change
+the IDE interpreter. Install missing libraries directly into this one environment
+using the selected executable with `-m pip`; its normal user-site is permitted.
+Preserve working CUDA/PyTorch. Use `python scripts/setup_environment.py` when
+dependencies are missing. Global skills/plugins and Codex configuration remain
+unchanged unless explicitly requested by the user. Reuse `datasets/`; generated
+artifacts stay in this repository. Do not automatically launch long training.
 
 Each experiment retains only `last.pt` and `best.pt`. Last is the last completed
 training/validation epoch; best uses validation accuracy. No previous.pt or

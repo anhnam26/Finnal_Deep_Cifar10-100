@@ -18,8 +18,11 @@ Modify one architecture/recipe component per ablation, repeat, then freeze the
 final design and evaluate only after full-training-set retraining. Distinguish
 architecture gains from recipe gains and report failures as well as successes.
 
-Use the existing Python 3.13 and CUDA PyTorch; project additions go in `.deps`.
-Never create a Python environment or write global Codex/skill/package settings.
+Use only `C:\Users\anhna\AppData\Local\Microsoft\WindowsApps\python3.13.exe`
+and its existing CUDA PyTorch. Install missing libraries into that interpreter's
+normal package environment. Never create/download/use another Python environment
+or a `.deps`/alternate site-packages directory. Follow the user's global Python
+policy; leave Codex/skill/plugin settings unchanged unless explicitly requested.
 No external AI service or pretrained download is needed for ordinary training.
 Preserve 32x32 spatial information early. Print stage shapes, channels, depth,
 parameters and the FLOP convention. Reference families may fail the exam budget;
