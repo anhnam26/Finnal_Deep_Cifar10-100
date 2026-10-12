@@ -19,7 +19,8 @@ def default_config(dataset='cifar10'):
             'data_root': str(ROOT / ('datasets' if (ROOT / 'datasets').exists() else 'data')),
             'run_dir': str(ROOT / 'checkpoints' / dataset), 'download': True,
             'smoke': False, 'limit_train': 0, 'limit_val': 0,
-            'phase': 'selection', 'log_every': 100, 'final_weights': 'ema'}
+            'phase': 'selection', 'log_every': 100, 'final_weights': 'ema',
+            'search_families': ['compactmix', 'wrn', 'preactresnet', 'convnext']}
 
 
 def merge_config(base, updates):

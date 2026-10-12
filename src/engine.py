@@ -29,7 +29,7 @@ CHECKPOINT_VERSION = 2
 
 def source_fingerprint():
     digest = hashlib.sha256()
-    for name in ('config.py', 'datasets.py', 'models.py', 'recipes.py', 'engine.py'):
+    for name in ('config.py', 'datasets.py', 'models.py', 'timm_models.py', 'recipes.py', 'engine.py'):
         digest.update((ROOT / 'src' / name).read_bytes().replace(b'\r\n', b'\n'))
     return digest.hexdigest()
 

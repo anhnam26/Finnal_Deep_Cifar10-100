@@ -14,7 +14,7 @@ from .models import build_model, profile_model
 
 def sample_config(trial, base):
     config = copy.deepcopy(base)
-    family = trial.suggest_categorical('family', ['compactmix'] if base['smoke'] else ['compactmix', 'wrn', 'preactresnet', 'convnext'])
+    family = trial.suggest_categorical('family', ['compactmix'] if base['smoke'] else base['search_families'])
     model = {'family': family}
     if family == 'compactmix':
         widths = {'small': [24, 64, 160], 'medium': [32, 80, 192], 'full': [40, 112, 256]}

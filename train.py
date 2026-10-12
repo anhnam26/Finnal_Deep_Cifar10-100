@@ -20,7 +20,10 @@ os.environ.setdefault('HF_HOME', str(ROOT / '.cache' / 'huggingface'))
 def parser():
     p = argparse.ArgumentParser(description='CIFAR exam: train, auto-resume, search, frozen final evaluation')
     p.add_argument('--dataset', choices=['both', 'cifar10', 'cifar100'], default='both')
-    p.add_argument('--model', choices=['compactmix', 'wrn', 'preactresnet', 'convnext'])
+    p.add_argument('--model', choices=['compactmix', 'wrn', 'preactresnet', 'convnext', 'resnet',
+                                     'resnext', 'convnextv2', 'efficientnet', 'regnet', 'mobilenet',
+                                     'vit', 'deit', 'swin', 'hybrid'])
+    p.add_argument('--search-families', help='Comma-separated model families for Optuna')
     p.add_argument('--config', type=Path)
     for flag, kind in [('epochs', int), ('batch-size', int), ('workers', int), ('seed', int),
                        ('lr', float), ('weight-decay', float), ('warmup', int), ('log-every', int),
@@ -73,6 +76,8 @@ def configs_from_args(args):
                 cfg['weight_decay'] = .0001
         if args.model:
             cfg['model'] = {'family': args.model}
+        if args.search_families:
+            cfg['search_families'] = args.search_families.split(',')
         cfg['smoke'] = args.smoke
         if args.smoke:
             cfg['epochs'] = args.epochs if args.epochs is not None else 2

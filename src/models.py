@@ -235,6 +235,9 @@ def build_model(config, classes):
         return ResidualNet(classes, **{'widths': (32, 64, 128), 'depths': (3, 3, 3), **config})
     if family == 'convnext':
         return CIFARConvNeXt(classes, **config)
+    from .timm_models import REFERENCE_MODELS, TimmCifarModel
+    if family in REFERENCE_MODELS:
+        return TimmCifarModel(family, classes, **config)
     raise ValueError(f'Unknown family {family}; choose compactmix/wrn/preactresnet/convnext')
 
 
@@ -263,6 +266,21 @@ def profile_model(model, enforce=True):
             operations = n * 2  # LayerScale multiply and residual add.
         elif isinstance(module, GlobalPool) and module.kind == 'avgmax':
             operations = n * 2
+        elif module.__class__.__name__ in ('Attention', 'WindowAttention') and hasattr(module, 'num_heads'):
+            x = inputs[0]
+            if x.ndim == 3:
+                batch, tokens, channels = x.shape
+                macs = 2 * batch * tokens * tokens * channels
+                counts['macs'] += macs
+                operations = 2 * macs + 6 * batch * module.num_heads * tokens * tokens
+        elif module.__class__.__name__ in ('GlobalResponseNorm', 'GlobalResponseNormMlp'):
+            operations = n * 12
+        elif module.__class__.__name__ in ('BasicBlock', 'Bottleneck', 'ConvNeXtBlock', 'Block', 'SwinTransformerBlock'):
+            operations = n * 2
+        elif isinstance(module, (nn.Hardswish, nn.Hardsigmoid)):
+            operations = n * 4
+        elif module.__class__.__name__ in ('SqueezeExcite', 'SqueezeExciteCl'):
+            operations = n * 3
         counts['flops'] += operations
     mode = model.training
     try:
@@ -275,10 +293,13 @@ def profile_model(model, enforce=True):
         for handle in handles:
             handle.remove()
         model.train(mode)
+    if getattr(model, 'is_reference', False):
+        counts['flops'] = math.ceil(counts['flops'] * 1.1)
     result = {**counts, 'parameters': sum(p.numel() for p in model.parameters() if p.requires_grad),
               'input': [1, 3, 32, 32], 'widths': model.widths,
               'depths': model.depths, 'resolutions': model.resolutions,
-              'convention': '2 FLOPs/MAC; analytical estimate including norm/activations/pools/adds/gates; memory operations excluded'}
+              'convention': '2 FLOPs/MAC; analytical estimate including norm/activations/pools/adds/gates; memory operations excluded'
+              + ('; timm functional attention estimates and 10% operation margin' if getattr(model, 'is_reference', False) else '')}
     if enforce and (result['parameters'] > 6_000_000 or result['flops'] >= 1_000_000_000):
         raise ValueError(f'Model exceeds exam budget: {result}')
     return result
