@@ -1,6 +1,6 @@
 # Generated for this project and the existing selected Python.
 [mcp_servers.optuna]
-command = "C:/Users/anhna/AppData/Local/Microsoft/WindowsApps/PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0/python.exe"
+command = "C:/Users/anhna/AppData/Local/Microsoft/WindowsApps/python3.13.exe"
 args = ["D:/DeepLearning/Finnal/scripts/start_optuna_mcp.py", "--storage", "sqlite:///D:/DeepLearning/Finnal/experiments/optuna.db"]
 cwd = "D:/DeepLearning/Finnal"
 startup_timeout_sec = 30

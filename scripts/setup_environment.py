@@ -1,97 +1,95 @@
-"""Reuse existing Python; install missing distributions only into .deps."""
+"""Install missing libraries into the one permitted Python environment."""
 import argparse
-import hashlib
 import importlib.metadata
 import json
 import os
 from pathlib import Path
+import site
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-REPORTS = ROOT / "reports" / "generated"
+sys.path.insert(0, str(ROOT))
+from src.python_policy import SELECTED_PYTHON, ensure_selected_python
+
+REPORTS = ROOT / 'reports' / 'generated'
+PROTECTED = ('torch', 'torchvision', 'numpy')
 
 
 def inventory():
-    home = Path.home()
-    files = {}
-    for folder in (home / ".agents", home / ".codex" / "plugins",
-                   home / ".codex" / "skills"):
-        if folder.exists():
-            for path in folder.rglob("*"):
-                if path.is_file():
-                    stat = path.stat()
-                    files[str(path)] = [stat.st_size, stat.st_mtime_ns]
-    config = home / ".codex" / "config.toml"
-    return {"files": files,
-            "config_sha256": hashlib.sha256(config.read_bytes()).hexdigest()
-            if config.exists() else None,
-            "packages": sorted([d.metadata["Name"], d.version]
-                               for d in importlib.metadata.distributions())}
+    return {'executable': sys.executable, 'prefix': sys.prefix,
+            'base_prefix': sys.base_prefix, 'user_site': site.getusersitepackages(),
+            'packages': {d.metadata['Name'].lower().replace('_', '-'): d.version
+                         for d in importlib.metadata.distributions()}}
+
+
+def verify_imports():
+    code = """
+import json, sys, site
+from pathlib import Path
+import torch, torchvision, numpy, timm, optuna, optuna_mcp, mcp, fpdf
+modules = (torch, torchvision, numpy, timm, optuna, optuna_mcp, mcp, fpdf)
+roots = [Path(p).resolve() for p in [site.getusersitepackages(), *site.getsitepackages()]]
+imports = {module.__name__: str(Path(module.__file__).resolve()) for module in modules}
+assert sys.prefix == sys.base_prefix
+for path in imports.values():
+ assert any(Path(path).is_relative_to(root) for root in roots), path
+print(json.dumps({'executable':sys.executable, 'prefix':sys.prefix,
+ 'base_prefix':sys.base_prefix, 'imports':imports,
+ 'torch':torch.__version__, 'torchvision':torchvision.__version__,
+ 'numpy':numpy.__version__, 'timm':timm.__version__, 'optuna':optuna.__version__,
+ 'cuda_available':torch.cuda.is_available(),
+ 'gpu':torch.cuda.get_device_name(0) if torch.cuda.is_available() else None}))
+"""
+    output = subprocess.check_output([str(SELECTED_PYTHON), '-X', 'utf8', '-c', code],
+                                     cwd=ROOT, text=True, encoding='utf-8')
+    return json.loads(output)
 
 
 def main():
+    ensure_selected_python()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--audit-after", action="store_true")
+    parser.add_argument('--audit-after', action='store_true')
     args = parser.parse_args()
     REPORTS.mkdir(parents=True, exist_ok=True)
-    before_path = REPORTS / "isolation-before.json"
+    before_path = REPORTS / 'shared-python-before.json'
     if args.audit_after:
-        before = json.loads(before_path.read_text(encoding="utf-8"))
+        before = json.loads(before_path.read_text(encoding='utf-8'))
         after = inventory()
-        diff = {"added_files": sorted(set(after["files"]) - set(before["files"])),
-                "modified_files": [p for p in before["files"]
-                                   if p in after["files"] and before["files"][p] != after["files"][p]],
-                "removed_files": sorted(set(before["files"]) - set(after["files"])),
-                "global_config_unchanged": before["config_sha256"] == after["config_sha256"],
-                "global_packages_unchanged": before["packages"] == after["packages"]}
-        (REPORTS / "isolation-audit.json").write_text(
-            json.dumps(diff, indent=2), encoding="utf-8")
-        print(json.dumps(diff, indent=2))
+        old, new = before['packages'], after['packages']
+        audit = {'runtime': verify_imports(),
+                 'added_packages': {k: v for k, v in new.items() if k not in old},
+                 'changed_packages': {k: {'before': old[k], 'after': new[k]}
+                                      for k in old.keys() & new.keys() if old[k] != new[k]},
+                 'removed_packages': sorted(old.keys() - new.keys()),
+                 'protected_packages_unchanged': all(old.get(k) == new.get(k) for k in PROTECTED),
+                 'policy': 'one existing Microsoft Store Python 3.13; direct package installation'}
+        (REPORTS / 'shared-python-audit.json').write_text(json.dumps(audit, indent=2), encoding='utf-8')
+        print(json.dumps(audit, indent=2))
         return
+    before = inventory()
     if not before_path.exists():
-        before_path.write_text(json.dumps(inventory()), encoding="utf-8")
+        before_path.write_text(json.dumps(before, indent=2), encoding='utf-8')
+    if not all(name in before['packages'] for name in PROTECTED):
+        raise RuntimeError('Existing CUDA torch/torchvision/numpy must be present in the selected Python')
+    constraints = REPORTS / 'shared-python-constraints.txt'
+    constraints.write_text('\n'.join(f'{name}=={before["packages"][name]}' for name in PROTECTED)+'\n', encoding='utf-8')
+    env = dict(os.environ, PIP_CACHE_DIR=str(ROOT / '.cache' / 'pip'),
+               PIP_DISABLE_PIP_VERSION_CHECK='1')
+    subprocess.run([str(SELECTED_PYTHON), '-m', 'pip', 'install',
+                    '-r', str(ROOT / 'requirements.txt'), '--constraint', str(constraints),
+                    '--upgrade-strategy', 'only-if-needed', '--only-binary=:all:'],
+                   cwd=ROOT, env=env, check=True)
+    verification = verify_imports()
+    if any(verification[name] != before['packages'][name] for name in PROTECTED):
+        raise RuntimeError('Protected CUDA/PyTorch/NumPy versions changed unexpectedly')
     from packaging.requirements import Requirement
-    directory = ROOT / ".deps"
-    directory.mkdir(exist_ok=True)
-    paths = [str(directory), *sys.path]
-    env = dict(os.environ, PIP_CACHE_DIR=str(ROOT / ".cache" / "pip"),
-               PIP_DISABLE_PIP_VERSION_CHECK="1")
-    queue = [line.strip() for line in (ROOT / "requirements.txt").read_text().splitlines()
-             if line.strip() and not line.startswith("#")]
-    checked = set()
-    resolved = {}
-    while queue:
-        raw = queue.pop(0)
-        requirement = Requirement(raw)
-        if requirement.marker and not requirement.marker.evaluate({"extra": ""}):
-            continue
-        if raw in checked:
-            continue
-        checked.add(raw)
-        name = requirement.name.lower().replace("_", "-")
-        candidates = [d for d in importlib.metadata.distributions(path=paths)
-                      if d.metadata["Name"].lower().replace("_", "-") == name]
-        matching = [d for d in candidates if d.version in requirement.specifier]
-        dist = next((d for d in matching if d.version == resolved.get(name)),
-                    matching[0] if matching else None)
-        if dist is None:
-            if name in ("torch", "torchvision", "numpy"):
-                raise RuntimeError(f"Existing {name} is incompatible with {raw}; do not replace the selected runtime")
-            subprocess.run([sys.executable, "-m", "pip", "install", "--target", str(directory),
-                            "--upgrade", "--no-deps", raw], cwd=ROOT, env=env, check=True)
-            importlib.invalidate_caches()
-            dist = next(d for d in importlib.metadata.distributions(path=[str(directory)])
-                        if d.metadata["Name"].lower().replace("_", "-") == name)
-        queue.extend(dist.requires or [])
-        resolved[name] = dist.version
-    versions = sorted(f'{name}=={version}' for name, version in resolved.items())
-    (ROOT / "requirements-lock.txt").write_text("\n".join(versions) + "\n", encoding="utf-8")
-    subprocess.run([sys.executable, "-c",
-                    "import sys; sys.path.insert(0,'.deps'); import torch,timm,optuna; "
-                    "print(sys.executable); print(torch.__version__,timm.__version__,optuna.__version__); "
-                    "print('CUDA',torch.cuda.is_available())"], cwd=ROOT, env=env, check=True)
+    lines = [line.strip() for line in (ROOT / 'requirements.txt').read_text().splitlines()
+             if line.strip() and not line.startswith('#')]
+    versions = [f'{Requirement(line).name}=={importlib.metadata.version(Requirement(line).name)}' for line in lines]
+    (ROOT / 'requirements-lock.txt').write_text('\n'.join(versions)+'\n', encoding='utf-8')
+    print(json.dumps(verification, indent=2))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

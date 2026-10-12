@@ -1,12 +1,12 @@
 """Read the project SQLite study without running new trials."""
 import argparse
 from pathlib import Path
-import site
 import sys
 
 ROOT = Path(__file__).resolve().parents[4]
-site.addsitedir(str(ROOT / '.deps'))
-sys.path.insert(0, str(ROOT / '.deps'))
+sys.path.insert(0, str(ROOT))
+from src.python_policy import ensure_selected_python
+ensure_selected_python()
 
 if __name__ == '__main__':
     import optuna
