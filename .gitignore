@@ -10,3 +10,10 @@ __pycache__/
 KnowLedge/
 BT1/
 .vscode
+.venv/
+.cache/
+data/
+checkpoints/
+experiments/
+reports/generated/
+.coverage
