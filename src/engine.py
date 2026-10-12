@@ -349,7 +349,8 @@ def run_experiment(config, stop_after_epochs=None, epoch_callback=None):
                                    ema_val_loss=averaged['loss'], ema_val_accuracy=averaged['accuracy'])
                     improved = score > best_accuracy
                 else:
-                    score, kind, selected, improved = -1., 'ema_fixed_epoch', ema, True
+                    selected = ema if config['final_weights'] == 'ema' else model
+                    score, kind, improved = -1., config['final_weights'] + '_fixed_epoch', True
                 epoch += 1
                 if improved:
                     best_accuracy, best_epoch, best_kind, best_weights = score, epoch, kind, cpu_weights(selected)

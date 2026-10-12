@@ -6,9 +6,11 @@ import os
 from pathlib import Path
 import re
 import signal
+import site
 import sys
 
 ROOT = Path(__file__).resolve().parent
+site.addsitedir(str(ROOT / '.deps'))
 sys.path.insert(0, str(ROOT / '.deps'))
 os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')
 os.environ.setdefault('MPLCONFIGDIR', str(ROOT / '.cache' / 'matplotlib'))
@@ -42,6 +44,7 @@ def parser():
     p.add_argument('--finalize', type=Path, help='Completed selection run: freeze recipe, retrain on 50k, test once')
     p.add_argument('--evaluate', type=Path, help='Evaluate a completed frozen FINAL run, once')
     p.add_argument('--report', action='store_true', help='Rebuild CSV, leaderboard and final-report PDF')
+    p.add_argument('--selection-only', action='store_true', help='Train/validate only; defer frozen retraining and test')
     return p
 
 
@@ -118,6 +121,8 @@ def main(argv=None):
                 finalize(args.finalize, args.stop_after_epochs)
             else:
                 evaluate_final(args.evaluate)
+            from src.reporting import build_reports
+            build_reports()
             return 0
         configurations = configs_from_args(args)
         if args.profile:
@@ -132,12 +137,26 @@ def main(argv=None):
                 search(config, args.trials, args.study_name, args.multi_objective, args.stop_after_epochs)
                 if engine.REQUEST_STOP:
                     break
+            from src.reporting import build_reports
+            build_reports()
             return 0
+        completed = []
         for index, config in enumerate(configurations, 1):
             print(f"\nQUEUE {index}/{len(configurations)}: {config['dataset']} {config['optimizer']} LR={config['lr']}\n", flush=True)
             result = engine.run_experiment(config, args.stop_after_epochs)
             if result['status'] == 'interrupted' or engine.REQUEST_STOP:
                 break
+            completed.append(result)
+        if len(completed) == len(configurations) and not args.selection_only and not args.smoke and not args.limit_train and not args.limit_val:
+            from src.finalize import finalize
+            for dataset in sorted({r['dataset'] for r in completed}):
+                candidates = [r for r in completed if r['dataset'] == dataset and not r['synthetic'] and not r['subset']]
+                if not candidates:
+                    continue
+                winner = max(candidates, key=lambda r: r['best_val_accuracy'])
+                final_result = finalize(Path(winner['config']['run_dir']), args.stop_after_epochs)
+                if final_result['status'] == 'interrupted' or engine.REQUEST_STOP:
+                    break
         if (ROOT / 'src' / 'reporting.py').exists():
             from src.reporting import build_reports
             build_reports()
