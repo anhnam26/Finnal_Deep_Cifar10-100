@@ -48,17 +48,27 @@ Mục tiêu nghiên cứu là CIFAR-10 ≥98%, CIFAR-100 khoảng ≥90%. **Chư
 train đầy đủ chứng minh các mốc này.** Smoke/subset accuracy không phải kết quả
 benchmark và bị loại khỏi bảng xếp hạng.
 
+Theo yêu cầu reset lịch sử, các thư mục cần xóa là `checkpoints/`,
+`experiments/` và `reports/generated/` (`outputs/` nếu có). Lệnh xóa của agent
+bị kiểm duyệt tự động từ chối (`blocked by policy`), nên lịch sử cũ vẫn còn.
+Bạn có thể xóa các thư mục đó trong Explorer trước khi chạy lệnh mặc định.
+Để bắt đầu ngay ở một tên thí nghiệm mới khi chưa dọn được:
+
+```powershell
+python -u train.py --run-name epoch-only
+```
+
 ## Theo dõi và dừng/chạy tiếp
 
-Log console và `training.log` ghi dataset, cấu hình, số tham số/FLOPs, batch,
-loss, training accuracy có Mixup/CutMix, validation raw/EMA, best và epoch của
-best, learning rate, tốc độ, ETA, VRAM, AMP skips và trạng thái lưu checkpoint.
+Console và `training.log` chỉ ghi **một dòng sau mỗi epoch hoàn tất train và
+validation**, khi checkpoint và metrics đã được lưu. Không có log batch,
+khởi động hoặc resume. Dòng epoch ghi dataset, pha train, model/optimizer,
+loss, training accuracy có mixing, validation raw/EMA, best và epoch của best,
+learning rate, thời gian, ETA, VRAM, AMP skips và trạng thái lưu checkpoint.
+Thông tin đầy đủ về tham số/FLOPs/cấu hình nằm trong `metadata.json`/`config.json`.
 
 ```text
-TRAIN epoch=20/600 batch=100/352 loss=... mixed_acc=... lr=... epoch_ETA=...
-EPOCH 20/600 | loss=... mixed_acc=... val_raw=... val_ema=... best=... @19
-             | time=... total_ETA=... VRAM=... AMP_skips=0 | saved last.pt
-RESUME completed_epoch=20 next_epoch=21/600 best_val=... @19
+cifar10 selection compactmix/sgd(base_lr=0.1) | EPOCH 20/600 | loss=... mixed_acc=... val_raw=... val_ema=... best=... @19 | lr=... time=... total_ETA=... VRAM=... AMP_skips=0 | saved last.pt
 ```
 
 Mỗi **thí nghiệm** chỉ giữ hai checkpoint:
@@ -80,7 +90,7 @@ Chạy lại **đúng lệnh cũ** để tự tiếp tục; thí nghiệm đã x
 xong train selection nhưng dừng ở retrain/test, cùng lệnh vẫn tiếp tục pha đó.
 
 Ghi file tạm, flush/fsync rồi thay thế atomically. Last còn giữ best weights để
-khôi phục khi best thiếu/hỏng. Last hỏng sẽ báo lỗi rõ ràng, không tự bắt đầu
+khôi phục khi best thiếu/hỏng ở cuối epoch tiếp theo. Last hỏng sẽ báo lỗi rõ ràng, không tự bắt đầu
 lại hoặc âm thầm thay checkpoint. Không nạp checkpoint từ nguồn không tin cậy.
 
 Thay epochs/LR/model/seed/recipe/device hoặc source sẽ bị từ chối resume. Muốn

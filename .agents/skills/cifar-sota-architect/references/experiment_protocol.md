@@ -12,6 +12,11 @@ recovery. Flush/fsync and atomic replacement preserve the previous last on a
 failed write. No numbered/rotating checkpoint. A hard stop replays the unfinished
 epoch. First Ctrl+C finishes and saves the epoch; second stops immediately.
 Unreadable last errors explicitly; there is no hidden fallback to older epochs.
+Normal console/file logs contain one summary only after a complete epoch and
+successful checkpoint/metrics persistence. No batch/startup/resume progress.
+Missing-best reconstruction is deferred until the next completed epoch. Write
+best before last when both need updating, so a best-write failure cannot advance
+the durable resume point. TensorBoard starts only after a completed epoch.
 
 Finalization fixes recipe, winning weight type and best validation epoch count,
 reinitializes and trains on all 50k images. Final-phase best aliases the fixed

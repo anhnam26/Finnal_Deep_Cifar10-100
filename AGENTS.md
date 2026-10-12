@@ -24,6 +24,13 @@ training/validation epoch; best uses validation accuracy. No previous.pt or
 numbered checkpoints. Changed config/source/runtime must not silently overwrite
 or abandon an existing run: reject resume and explain `--run-name`.
 
+Normal training emits exactly one console/file summary only after a complete
+training/validation epoch and successful checkpoint/metrics writes. No batch,
+startup, queue or resume progress messages. TensorBoard metrics and best/last
+updates occur only at completed epochs; defer missing-best repair to the next
+epoch boundary. User-requested history deletion is authorized explicitly; keep
+dataset/source/Git history separate from generated training artifacts.
+
 ## Git commit rules
 
 After each independent meaningful unit, validate and immediately make a local

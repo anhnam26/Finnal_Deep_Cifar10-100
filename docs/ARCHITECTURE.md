@@ -37,3 +37,7 @@ is the fixed final epoch rather than test-selected weights. Checkpoints are
 epoch-atomic, exactly best.pt/last.pt per experiment, with strict config/source/
 environment matching and deterministic sample-seeded replay. See README for
 commands and `reports/architecture_notes.md` for untested hypotheses.
+
+Normal logs are emitted once per completed training/validation epoch after
+durable checkpoint and metrics writes. Both best and last are updated at epoch
+boundaries, including deferred best recovery. No batch/startup/resume logs.
