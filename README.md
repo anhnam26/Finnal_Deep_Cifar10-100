@@ -1,57 +1,136 @@
-# Lightweight CIFAR final — ScaleGateNet
+# CIFAR: train một file, log rõ ràng, tự resume
 
-Project root: `D:\DeepLearning\Finnal`. Follow `D:\DeepLearning\Finnal\Final exam.docx`: <=6M learnable parameters, <1 GFLOP, both CIFAR datasets, SGD/Adam with several initial LRs, PDF and oral defense. **98% CIFAR-10 / 95% CIFAR-100 validation are goals, not results or promises.** Architecture non-duplication must be confirmed with the instructor.
+Chạy tại D:/DeepLearning/Finnal. Chỉ có một file Python vận hành: train.py.
+Dữ liệu CIFAR đã có được dùng lại, không tải lại mặc định. Môi trường hiện tại
+Python 3.13 / PyTorch 2.7.1+cu118 / torchvision 0.22.1 chạy được trên RTX 4060 8GB;
+pipeline mới không cần timm hay pretrained weights, không tự cài package.
 
-## Architecture and protocol
+## Chạy ngay
 
-`D:\DeepLearning\Finnal\models\scalegate.py`: stride1 3x3 stem; 32/16/8 stages with widths40/120/320, depths2/3/4; dense3x3 extraction followed by four hierarchical channel-split3x3 paths and1x1 remixing. Optional pooled channel gates in stages2/3; GAP+linear head. Labels `fusion`/`no_fusion` now mean local gate on/off, NOT stage fusion. Independently implemented from established Res2Net/SE/residual ideas; no novelty claim. Both heads/variants fit4.981–5.125M parameters and0.8896–0.8903GFLOPs. Sources and limitations: `D:\DeepLearning\Finnal\docs\SCALEGATE_RESEARCH.md`.
+    python train.py
 
-One backbone for both datasets, classifier10/100. Training from scratch, official data only; no distillation, ensemble or TTA. Fixed stratified45k/5k split2026, initialization seed42. Test is not used by training/queue or selection. BT1 is retained unchanged as a classroom template, not copied wholesale; weighted sample metrics and separate validation dataset objects avoid issues in the sample scripts.
+Lệnh này chạy dualpath trên CIFAR-10 rồi CIFAR-100, mỗi dataset 600 epochs,
+SGD LR 0.1, batch 128, workers 2, AMP trên CUDA. Đây là queue train dài;
+không khởi chạy thêm cửa sổ train song song. Log ghi ngay ra terminal và file.
 
-Existing Python3.13 / PyTorch2.7.1+cu118 environment; no new environment/dependency. Run commands below in the root or use absolute paths.
+Nếu phiên gần nhất chưa hoàn thành, chính lệnh trên tiếp tục từ checkpoint.
+Nếu phiên trước đã hoàn thành, lệnh tạo phiên mới, không ghi đè kết quả cũ.
+Khi resume, recipe của phiên được giữ nguyên; muốn đổi epochs/model/LR/batch
+thì thêm --new. Log/checkpoint frequency và --download vẫn có thể đổi khi resume.
 
-```powershell
-python -B -m pytest -q
-powershell -NoProfile -ExecutionPolicy Bypass -File D:\DeepLearning\Finnal\tests\test_watch_training.ps1
-python -B D:\DeepLearning\Finnal\profile_model.py --variant fusion --classes 100
-python -B D:\DeepLearning\Finnal\profile_model.py --variant no_fusion --classes 10
-```
+**98% CIFAR-10 / 95% CIFAR-100 là mục tiêu, chưa phải kết quả đo được và không
+được cam kết.** Đề Final exam.docx yêu cầu <=6M tham số và <1 GFLOP. Hai biến thể
+mới đều đáp ứng giới hạn này, nhưng CIFAR-100 95% từ scratch với model nhỏ là
+mục tiêu rất khó. Không thay số đo, không lấy validation thay test để báo đạt.
 
-Profiler input[1,3,32,32], conv/linear2 FLOPs/MAC, BN unfused4/element, LayerNorm8/element+3/group, sigmoid4, residual/fusion add/multiply1, GAP and biases counted. Flatten/memory ignored. Scalar transcendental conventions are estimates, not hardware latency. Never divide MACs by2 to derive FLOPs.
+## Dừng và chạy tiếp
 
-## Experiments
+- Nhấn Ctrl+C một lần: trainer hoàn tất batch đang xử lý, lưu checkpoint rồi dừng.
+- Chạy lại python train.py: tiếp tục đúng batch kế tiếp của checkpoint.
+- Mất điện/End Task/kill không thể tạo checkpoint mới: khôi phục checkpoint
+  bền vững gần nhất. Mặc định lưu mỗi 50 batches hoặc 120 giây tại ranh giới batch.
+- Nếu cần lưu từng batch, chấp nhận chậm hơn do I/O:
 
-`D:\DeepLearning\Finnal\configs\scalegate\manifest.json`: C100 gate on -> C100 gate off -> C10 gate on -> C10 gate off (4x300epochs). Four full2epoch real-data smokes cover both heads/variants. Recipe: batch128, workers0, SGD0.1 momentum0.9 Nesterov, WD5e-4, crop/flip+CutMix(alpha1,p0.5), plain CE, per-step cosine with5epoch warmup (none in smoke). Train accuracy is CutMix-weighted. AutoAugment is available for a separate trial, OFF in this queue. CUDA AMP initial scale4096; skips logged and >1%/epoch blocked.
+    python train.py --checkpoint-every 1
 
-```powershell
-python -B -u D:\DeepLearning\Finnal\study.py --manifest D:\DeepLearning\Finnal\configs\scalegate\manifest.json --stage smoke
-python -B -u D:\DeepLearning\Finnal\study.py --manifest D:\DeepLearning\Finnal\configs\scalegate\manifest.json
-powershell -NoProfile -ExecutionPolicy Bypass -File D:\DeepLearning\Finnal\watch_training.ps1
-```
+- Validation/test bị ngắt sẽ được đánh giá lại từ đầu, không train lại các batch
+  đã được lưu. last.pt lỗi/mất sẽ thử previous.pt.
+- Không xóa lock bằng tay: lock do hệ điều hành quản lý và tự nhả khi process chết.
+- Không sửa train.py trong lúc một phiên đang chạy; hash code chặn resume sai
+  kiến trúc/logic. Sau khi đổi code, bắt đầu --new.
 
-Do not start another queue when one is alive. Source fingerprint guards resume; keep executable Python frozen during training. Global/per-study locks, fail-stop and `STOP_AFTER_RUN` are retained. Stale locks require checking both queue and trainer PIDs, not blindly deleting them. Smoke budget includes checkpoint/validation and25% reserve; thermals/host memory can change runtime. Keep unrelated programs/processes untouched.
+## Các lệnh cần dùng
 
-The12run SGD/Adam matrix is **not launched**: both datasets, SGD LR0.05/0.1/0.15, Adam LR0.0003/0.001/0.003 (not AdamW),150epochs. Adam betas0.9/0.999 eps1e-8 WD1e-4; optimizer-specific WD difference is disclosed. Old candidate_matrix configs retired. Finalize architecture/recipe and generate into a new directory before matrix launch.
+Train lại độc lập, vẫn giữ phiên cũ:
 
-Generator refuses config/output reuse:
-```powershell
-python -B D:\DeepLearning\Finnal\prepare_study.py --mode matrix --variant fusion --destination D:\DeepLearning\Finnal\configs\selected_matrix --output-root D:\DeepLearning\Finnal\outputs\selected_matrix
-```
+    python train.py --new
 
-No fusion superiority is assumed. Compare architecture under identical recipe, recipe changes under identical architecture. Augmentation/EMA experiments, additional seeds, frozen final50k training and official test follow only after validation evidence.
+Chỉ CIFAR-100:
 
-## Resume, exports, PDF
+    python train.py --new --dataset cifar100
 
-```powershell
-python -B D:\DeepLearning\Finnal\train.py --config <absolute-config-path> --resume <absolute-last.pt-path>
-python -B D:\DeepLearning\Finnal\evaluate_full.py --checkpoint <absolute-best.pt-path> --split validation --output-dir <new-absolute-export-directory>
-python -B D:\DeepLearning\Finnal\reporting.py --study-root D:\DeepLearning\Finnal\outputs\scalegate
-```
+Biến thể localpath để đối chứng:
 
-Checkpoint stores model/optimizer/scaler/RNG/loader RNG/config/split/source. Resume only original output and same schedule. Validation exports include5k predictions, per-class/confusion/calibration metrics, learning curves, model-only weights and PDF. Aggregate PDF is **provisional**, not final submission; smoke/unfinished runs are excluded from architecture ranking. Matched fusion ablations use paired prediction comparisons. Official test requires `--split test --confirm-final-test` after freezing decisions; outputs cannot be overwritten. Never tune using test results.
+    python train.py --new --model localpath
 
-## Retired experiments
+Adam hoặc LR/batch khác; nếu hết VRAM, bắt đầu phiên mới batch nhỏ hơn:
 
-Old model code, launchers, configs, ignored weights/optimizer states/logs and source snapshots were retired after inventory. Historical best validation (single seed): baseline15095.50%, baseline30095.46%, preactivation15095.22%; different schedules are not matched evidence. Old ignored weights cannot be recovered from Git. Source history remains in Git; detailed internal inventory is ignored in `D:\DeepLearning\Finnal\plan_action`.
+    python train.py --new --optimizer adam --lr 0.001
+    python train.py --new --batch-size 64 --workers 2
 
-StageFusionNet was also retired at user request: old source/config entrypoints and24 ignored weights/checkpoints deleted (not recoverable through Git); historical metrics/logs/predictions/PDFs remain. Historical results: `D:\DeepLearning\Finnal\docs\RETIRED_STAGEFUSION.md`; new design: `D:\DeepLearning\Finnal\docs\SCALEGATE_RESEARCH.md`. Old export completion markers do not imply deleted weights exist. Preserved: datasets, KnowLedge, BT1, exam, download evidence, reusable infrastructure and Git history. No automatic push. Long-term protocol: `D:\DeepLearning\Finnal\docs\FINAL_PLAN.md`. Before long launch require >=1536MiB freeRAM/5120MiB freecommit/12GiB disk.
+Ma trận theo đề: cả hai dataset, SGD 0.05/0.1/0.15, Adam 0.0003/0.001/0.003,
+12 lần train độc lập (rất lâu):
+
+    python train.py --new --matrix
+
+Resume một phiên cụ thể; truyền thư mục phiên, không phải file .pt:
+
+    python train.py --resume outputs/rebuilt/TEN_THU_MUC_PHIEN
+
+Kiểm tra kiến trúc, không train, không tải dữ liệu:
+
+    python train.py --profile
+
+Smoke test 2 epochs trên dữ liệu giả, kết quả KHÔNG phải benchmark CIFAR:
+
+    python train.py --smoke --new
+
+Smoke lưu ở outputs/rebuilt_smoke, tách khỏi phiên train thật.
+Nếu có vấn đề workers trên Windows, dùng --new --workers 0.
+--download chỉ dùng khi dữ liệu bị thiếu. --fast cho phép thuật toán không
+deterministic để ưu tiên tốc độ; mặc định ưu tiên reproducibility.
+
+    python train.py --help
+
+## Kết quả lưu ở đâu?
+
+    outputs/rebuilt/<timestamp_id>/
+        session.json                 recipe/environment và trạng thái toàn phiên
+        session.log                  log toàn queue, append khi resume
+        results.json                 tóm tắt các run đã hoàn tất
+        cifar10_dualpath_sgd_lr0.1/
+            config.json              hyperparameters và profile model
+            split.json               chỉ số train/validation, SHA256
+            terminal.log             log riêng run, append khi resume
+            metrics.csv              mỗi epoch một dòng, không trùng khi resume
+            last.pt                  model + EMA + optimizer + scaler + RNG + vị trí
+            previous.pt              checkpoint dự phòng
+            best.pt                  weights chọn bằng validation
+            result.json              test metrics, target_met, profile và provenance
+            confusion_matrix.json    ma trận nhầm lẫn test
+        cifar100_dualpath_sgd_lr0.1/
+            ...
+
+Terminal hiển thị epoch/batch, loss, mixed train accuracy, validation raw/EMA,
+LR, ảnh/giây, ETA epoch, peak VRAM, AMP skips và mỗi lần save checkpoint.
+Train accuracy có MixUp/CutMix nên không so trực tiếp với accuracy ảnh sạch.
+Train/validation chia 45k/5k từ training set; test 10k chỉ chạy sau khi train xong.
+Best checkpoint được chọn bằng validation, không dùng test để chọn model.
+Kết quả có top-1, top-5, macro F1 và recall từng class.
+
+## Kiến trúc và kiểm thử
+
+- CompactMixNet dualpath: 5.248M/5.271M params (10/100 classes), ~0.8424 GFLOP.
+- CompactMixNet localpath: 5.209M/5.232M params, ~0.8329 GFLOP.
+- Cả hai là tổ hợp residual + spatial branches + grouped mixing + channel gates;
+  không tuyên bố novelty. Cần xác nhận điều kiện không trùng kiến trúc với giảng viên.
+- docs/ARCHITECTURE.md giải thích cấu trúc, recipe, FLOP convention và resume.
+- tests/test_training.py kiểm tra budgets, splits, sampler, RNG, atomic save,
+  corrupt-checkpoint fallback, locks, SGD/Adam resume so với chạy liền mạch.
+
+    python -B -m pytest -q
+
+Kiểm thử resume dùng mạng nhỏ để test state machine nhanh; smoke test CLI dùng
+chính kiến trúc đầy đủ. Smoke/pytest không chứng minh accuracy 98%/95%.
+
+## Dọn project
+
+Các kiến trúc/model code cũ, scripts train/eval/queue/monitor/profile cũ, configs,
+tests và tài liệu cũ đã bỏ. BT1 chứa code model mẫu cũ và plan_action chứa kế
+hoạch pipeline cũ cũng được bỏ. Giữ nguyên datasets, kết quả/checkpoints cũ trong
+outputs, Final exam.docx, KnowLedge và lịch sử Git. Code mới không resume
+checkpoint của kiến trúc cũ; kết quả mới chỉ nằm trong outputs/rebuilt.
+
+Kiểm kê môi trường Python và những phần dọn hệ thống còn bị chặn được ghi rõ
+trong docs/ENVIRONMENT.md. VS Code hiện dùng Python 3.13 Microsoft Store;
+Python 3.14 còn giữ riêng cho free-claude-code, không dùng để train project này.
