@@ -1,4 +1,4 @@
-'''Single-entry CIFAR experiments with bounded models and resumable batches.'''
+'''Single-entry CIFAR experiments with epoch summaries and epoch checkpoints.'''
 
 import argparse
 import copy
@@ -422,17 +422,17 @@ def initial_state():
             'epoch_seconds': 0.0, 'amp_skips': 0, 'history': []}
 
 
-def save_progress(directory, model, ema, optimizer, scaler, state, config, metadata, reason):
+def save_progress(directory, model, ema, optimizer, scaler, state, config, metadata):
+    if (state['epoch'] < 1 or state['next_batch'] != 0
+            or state['phase'] not in ('train', 'test')
+            or len(state['history']) != state['epoch']):
+        raise ValueError('Checkpoints require a completed training and validation epoch')
     payload = {'version': VERSION, 'source_sha256': source_hash(), 'config': config,
                'split_sha256': metadata['split_sha256'], 'state': copy.deepcopy(state),
                'model': model.state_dict(), 'ema': ema.state_dict(),
                'optimizer': optimizer.state_dict(), 'scaler': scaler.state_dict(),
                'rng': capture_rng()}
-    started = time.perf_counter()
     atomic_checkpoint(Path(directory) / 'last.pt', payload, rotate=True)
-    logging.info('CHECKPOINT %s | epoch=%d next_batch=%d phase=%s step=%d | %.2fs',
-                 reason, state['epoch'] + 1, state['next_batch'], state['phase'],
-                 state['global_step'], time.perf_counter() - started)
 
 
 def write_history(directory, history):
@@ -460,12 +460,11 @@ def check_stop():
 
 
 @torch.inference_mode()
-def evaluate(model, loader, classes, device, label, log_every):
+def evaluate(model, loader, classes, device):
     model.eval()
     loss_sum, correct, top5, seen = 0.0, 0, 0, 0
     confusion = torch.zeros(classes, classes, dtype=torch.int64, device=device)
-    started = time.perf_counter()
-    for batch, (images, labels) in enumerate(loader):
+    for images, labels in loader:
         check_stop()
         images, labels = images.to(device, non_blocking=True), labels.to(device, non_blocking=True)
         with torch.autocast(device_type=device, enabled=device == 'cuda'):
@@ -481,10 +480,6 @@ def evaluate(model, loader, classes, device, label, log_every):
         confusion += torch.bincount(labels * classes + predicted,
                                      minlength=classes * classes).reshape(classes, classes)
         seen += count
-        if (batch + 1) % log_every == 0 or batch + 1 == len(loader):
-            logging.info('%s batch=%d/%d loss=%.4f acc=%.2f%% elapsed=%.1fs',
-                         label, batch + 1, len(loader), loss_sum / seen,
-                         100 * correct / seen, time.perf_counter() - started)
     check_stop()
     matrix = confusion.cpu().numpy()
     diagonal = matrix.diagonal().astype(float)
@@ -498,7 +493,7 @@ def evaluate(model, loader, classes, device, label, log_every):
             'per_class_recall': (100 * recall).tolist()}
 
 
-def train_epoch(model, ema, optimizer, scaler, source, metadata, state, config, directory, runtime):
+def train_epoch(model, ema, optimizer, scaler, source, metadata, state, config, runtime):
     training_transform, _ = image_transforms(config['dataset'])
     epoch = state['epoch']
     training = SeededImages(source, metadata['train_indices'], training_transform, config['seed'], epoch)
@@ -506,10 +501,7 @@ def train_epoch(model, ema, optimizer, scaler, source, metadata, state, config, 
     batches = math.ceil(len(training) / config['batch_size'])
     starting_batch = state['next_batch']
     model.train()
-    checkpoint_time, last_batch_time = time.perf_counter(), time.perf_counter()
-    logging.info('TRAIN %s epoch=%d/%d start_batch=%d/%d optimizer=%s',
-                 config['dataset'], epoch + 1, config['epochs'], starting_batch,
-                 batches, config['optimizer'])
+    last_batch_time = time.perf_counter()
     check_stop()
     for offset, (images, labels) in enumerate(loader):
         batch = starting_batch + offset
@@ -518,7 +510,7 @@ def train_epoch(model, ema, optimizer, scaler, source, metadata, state, config, 
             group['lr'] = rate
         images = images.to(config['device'], non_blocking=True)
         labels = labels.to(config['device'], non_blocking=True)
-        images, targets, shuffled, coefficient, mixing = mixed_batch(
+        images, targets, shuffled, coefficient, _ = mixed_batch(
             images, labels, metadata['classes'], config, epoch)
         optimizer.zero_grad(set_to_none=True)
         with torch.autocast(device_type=config['device'], enabled=config['device'] == 'cuda'):
@@ -537,7 +529,6 @@ def train_epoch(model, ema, optimizer, scaler, source, metadata, state, config, 
         skipped = scaler.get_scale() < old_scale
         if skipped:
             state['amp_skips'] += 1
-            logging.warning('AMP overflow: optimizer step skipped, new scale=%.1f', scaler.get_scale())
         else:
             state['global_step'] += 1
             update_ema(ema, model, state['global_step'])
@@ -552,33 +543,19 @@ def train_epoch(model, ema, optimizer, scaler, source, metadata, state, config, 
         state['epoch_seconds'] += now - last_batch_time
         last_batch_time = now
         runtime['processed_batches'] += 1
-        seen, seconds = state['train_seen'], max(state['epoch_seconds'], 1e-6)
-        if (batch + 1) % runtime['log_every'] == 0 or batch + 1 == batches:
-            memory = torch.cuda.max_memory_allocated() / 2 ** 30 if config['device'] == 'cuda' else 0
-            logging.info(
-                'TRAIN epoch=%d/%d batch=%d/%d loss=%.4f mix_acc=%.2f%% lr=%.6g '
-                'aug=%s img/s=%.1f ETA_epoch=%.0fs GPU_peak=%.2fGiB skips=%d',
-                epoch + 1, config['epochs'], batch + 1, batches,
-                state['train_loss_sum'] / seen, 100 * state['train_correct'] / seen,
-                rate, mixing, seen / seconds, (len(training) - seen) / (seen / seconds),
-                memory, state['amp_skips'])
         if runtime['stop_after_steps'] and runtime['processed_batches'] >= runtime['stop_after_steps']:
             request_stop(None, None)
-        if STOP_REQUESTED or (batch + 1) % runtime['checkpoint_every'] == 0 or now - checkpoint_time >= 120:
-            save_progress(directory, model, ema, optimizer, scaler, state, config, metadata, 'batch')
-            checkpoint_time = time.perf_counter()
-            last_batch_time = checkpoint_time
         check_stop()
     state['phase'] = 'validate'
-    save_progress(directory, model, ema, optimizer, scaler, state, config, metadata, 'before-validation')
 
 
-def validate_epoch(model, ema, optimizer, scaler, source, metadata, state, config, directory, runtime):
+def validate_epoch(model, ema, optimizer, scaler, source, metadata, state, config, directory):
+    started = time.perf_counter()
     _, validation_transform = image_transforms(config['dataset'])
     validation = SeededImages(source, metadata['validation_indices'], validation_transform, config['seed'])
     loader = make_loader(validation, config)
-    raw = evaluate(model, loader, metadata['classes'], config['device'], 'VAL raw', runtime['log_every'])
-    averaged = evaluate(ema, loader, metadata['classes'], config['device'], 'VAL ema', runtime['log_every'])
+    raw = evaluate(model, loader, metadata['classes'], config['device'])
+    averaged = evaluate(ema, loader, metadata['classes'], config['device'])
     chosen_model, chosen, weights = (ema, averaged, 'ema') if averaged['accuracy'] > raw['accuracy'] else (model, raw, 'raw')
     epoch = state['epoch'] + 1
     if chosen['accuracy'] > state['best_accuracy']:
@@ -588,26 +565,28 @@ def validate_epoch(model, ema, optimizer, scaler, source, metadata, state, confi
             'model': chosen_model.state_dict(), 'epoch': epoch, 'weights': weights,
             'validation_accuracy': chosen['accuracy'], 'split_sha256': metadata['split_sha256'],
         })
-        logging.info('NEW BEST validation=%.2f%% epoch=%d weights=%s', chosen['accuracy'], epoch, weights)
     row = {'epoch': epoch, 'train_loss': state['train_loss_sum'] / state['train_seen'],
            'train_mix_accuracy': 100 * state['train_correct'] / state['train_seen'],
            'validation_loss': raw['loss'], 'validation_accuracy': raw['accuracy'],
            'ema_validation_loss': averaged['loss'], 'ema_validation_accuracy': averaged['accuracy'],
            'best_validation_accuracy': state['best_accuracy'],
            'lr': optimizer.param_groups[0]['lr'], 'train_seconds': state['epoch_seconds'],
-           'amp_skips': state['amp_skips'], 'global_step': state['global_step']}
+           'amp_skips': state['amp_skips'], 'global_step': state['global_step'],
+           'epoch_seconds': state['epoch_seconds'] + time.perf_counter() - started}
     state['history'].append(row)
-    logging.info('EPOCH %d/%d | train=%.2f%% (mixed) val=%.2f%% ema=%.2f%% '
-                 'best=%.2f%%@%d | target=%.1f%% (not guaranteed)',
-                 epoch, config['epochs'], row['train_mix_accuracy'], raw['accuracy'],
-                 averaged['accuracy'], state['best_accuracy'], state['best_epoch'], config['target'])
-    if state['amp_skips'] > max(3, math.ceil(len(metadata['train_indices']) / config['batch_size']) * 0.01):
-        logging.warning('More than 1%% AMP skips: consider --new --lr with a smaller rate')
     state.update(epoch=epoch, next_batch=0, train_loss_sum=0.0, train_correct=0.0,
                  train_seen=0, epoch_seconds=0.0, amp_skips=0,
                  phase='test' if epoch == config['epochs'] else 'train')
-    save_progress(directory, model, ema, optimizer, scaler, state, config, metadata, 'epoch-complete')
+    save_progress(directory, model, ema, optimizer, scaler, state, config, metadata)
     write_history(directory, state['history'])
+    memory = torch.cuda.max_memory_allocated() / 2 ** 30 if config['device'] == 'cuda' else 0
+    logging.info('%s/%s/%s EPOCH %d/%d | loss=%.4f train=%.2f%% (mixed) '
+                 'val=%.2f%% ema=%.2f%% best=%.2f%%@%d | lr=%.6g '
+                 'time=%.1fs GPU_peak=%.2fGiB AMP_skips=%d | checkpoint=last.pt',
+                 config['dataset'], config['model'], config['optimizer'], epoch, config['epochs'],
+                 row['train_loss'], row['train_mix_accuracy'], raw['accuracy'],
+                 averaged['accuracy'], state['best_accuracy'], state['best_epoch'], row['lr'],
+                 row['epoch_seconds'], memory, row['amp_skips'])
 
 
 def final_test(directory, config, runtime):
@@ -623,9 +602,7 @@ def final_test(directory, config, runtime):
         source = dataset_class(root=config['data_root'], train=False,
                                download=config['download'] or runtime['download'])
     loader = make_loader(SeededImages(source, list(range(len(source))), transform, config['seed']), config)
-    logging.info('FINAL TEST: best validation checkpoint epoch=%d weights=%s; no test-based selection',
-                 best['epoch'], best['weights'])
-    metrics = evaluate(model, loader, classes, config['device'], 'TEST', runtime['log_every'])
+    metrics = evaluate(model, loader, classes, config['device'])
     result = {'dataset': config['dataset'], 'model': config['model'], 'optimizer': config['optimizer'],
               'initial_lr': config['lr'], 'epochs': config['epochs'],
               'best_epoch': best['epoch'], 'selected_weights': best['weights'],
@@ -651,7 +628,8 @@ def run_job(directory, config, runtime):
         if checkpoint:
             if checkpoint['source_sha256'] != source_hash() or checkpoint['config'] != config:
                 raise ValueError('Resume blocked: code/recipe changed. Use --new for a fresh experiment')
-            if checkpoint['state']['phase'] == 'complete':
+            if (checkpoint['state']['phase'] in ('test', 'complete')
+                    and (directory / 'result.json').exists()):
                 return json.loads((directory / 'result.json').read_text(encoding='utf-8'))
         seed_everything(config['seed'], not config['fast'])
         device = config['device']
@@ -675,36 +653,21 @@ def run_job(directory, config, runtime):
             scaler.load_state_dict(checkpoint['scaler'])
             state = checkpoint['state']
             restore_rng(checkpoint['rng'])
-            logging.info('RESUME %s epoch=%d next_batch=%d phase=%s global_step=%d',
-                         directory, state['epoch'] + 1, state['next_batch'], state['phase'], state['global_step'])
             del checkpoint
-        else:
-            save_progress(directory, model, ema, optimizer, scaler, state, config, metadata, 'initial')
         atomic_json(directory / 'config.json', {**config, 'profile': profile})
         write_history(directory, state['history'])
-        logging.info('MODEL %s %.3fM params %.4f GFLOPs | train=%d validation=%d | %s',
-                     config['model'], profile['parameters'] / 1e6, profile['flops'] / 1e9,
-                     len(metadata['train_indices']), len(metadata['validation_indices']), directory)
-        if config['smoke']:
-            logging.warning('SYNTHETIC SMOKE TEST: these metrics are NOT CIFAR benchmark results')
         while state['phase'] != 'complete':
             check_stop()
             if state['phase'] == 'train':
-                train_epoch(model, ema, optimizer, scaler, source, metadata, state, config, directory, runtime)
+                train_epoch(model, ema, optimizer, scaler, source, metadata, state, config, runtime)
             elif state['phase'] == 'validate':
-                validate_epoch(model, ema, optimizer, scaler, source, metadata, state, config, directory, runtime)
+                validate_epoch(model, ema, optimizer, scaler, source, metadata, state, config, directory)
             elif state['phase'] == 'test':
                 result = final_test(directory, config, runtime)
-                state['phase'] = 'complete'
-                save_progress(directory, model, ema, optimizer, scaler, state, config, metadata, 'run-complete')
                 return result
             else:
                 raise ValueError('Unknown checkpoint phase')
         raise RuntimeError('Completed run has no result')
-    except TrainingStopped:
-        if 'state' in locals():
-            save_progress(directory, model, ema, optimizer, scaler, state, config, metadata, 'controlled-stop')
-        raise
     finally:
         logging.getLogger().removeHandler(file_handler)
         file_handler.close()
@@ -764,13 +727,11 @@ def parse_args(argv=None):
     parser.add_argument('--download', action='store_true', help='download missing official CIFAR files')
     parser.add_argument('--matrix', action='store_true', help='SGD 0.05/0.1/0.15 and Adam 0.0003/0.001/0.003')
     parser.add_argument('--fast', action='store_true', help='allow nondeterministic cuDNN for speed')
-    parser.add_argument('--checkpoint-every', type=int, default=50, help='durable save every N completed batches, also every 120s')
-    parser.add_argument('--log-every', type=int, default=20)
     parser.add_argument('--profile', action='store_true', help='print all model budgets without training')
     parser.add_argument('--smoke', action='store_true', help='2 epochs of FakeData; NOT an accuracy benchmark')
     parser.add_argument('--stop-after-steps', type=int, default=0, help='controlled stop after N batches in this invocation')
     args = parser.parse_args(argv)
-    for key in ('epochs', 'batch_size', 'checkpoint_every', 'log_every'):
+    for key in ('epochs', 'batch_size'):
         if getattr(args, key) <= 0:
             parser.error('--{} must be positive'.format(key.replace('_', '-')))
     if args.workers is not None and args.workers < 0:
@@ -854,8 +815,7 @@ def main(argv=None):
         print(json.dumps(profiles, indent=2))
         return 0
     output_root = (args.output_root or ROOT / 'outputs' / ('rebuilt_smoke' if args.smoke else 'rebuilt')).resolve()
-    runtime = {'log_every': args.log_every, 'checkpoint_every': args.checkpoint_every,
-               'stop_after_steps': args.stop_after_steps, 'processed_batches': 0, 'download': args.download}
+    runtime = {'stop_after_steps': args.stop_after_steps, 'processed_batches': 0, 'download': args.download}
     logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s',
                         handlers=[logging.StreamHandler(sys.stdout)], force=True)
     signal.signal(signal.SIGINT, request_stop)
@@ -870,16 +830,12 @@ def main(argv=None):
             handler.setFormatter(logging.Formatter('%(asctime)s | %(levelname)s | %(message)s'))
             logging.getLogger().addHandler(handler)
             try:
-                logging.info('SESSION %s | %d jobs | saved recipe takes precedence on resume', directory, len(session['jobs']))
-                logging.warning('98%/95% are targets, NOT measured results or promises. Test is used only after training')
                 results = []
-                for position, job in enumerate(session['jobs']):
+                for job in session['jobs']:
                     check_stop()
                     config = job['config']
                     if config['device'] == 'cpu':
                         torch.set_num_threads(min(4, os.cpu_count() or 1))
-                        logging.warning('CPU training is slow. Full 600-epoch experiments are intended for CUDA')
-                    logging.info('JOB %d/%d %s', position + 1, len(session['jobs']), job['name'])
                     result = run_job(directory / job['name'], config, runtime)
                     results.append({'run': job['name'], 'test_accuracy': result['test']['accuracy'],
                                     'best_validation_accuracy': result['best_validation_accuracy'],
@@ -890,12 +846,11 @@ def main(argv=None):
                 session['status'] = 'complete'
                 session['completed_utc'] = datetime.now(timezone.utc).isoformat()
                 atomic_json(directory / 'session.json', session)
-                logging.info('ALL JOBS COMPLETE | %s', directory / 'results.json')
                 return 0
             except TrainingStopped:
                 session['status'] = 'paused'
                 atomic_json(directory / 'session.json', session)
-                logging.info('PAUSED safely. Run python train.py again to continue this session: %s', directory)
+                logging.info('STOPPED | Resume from the last completed epoch: %s', directory)
                 return 0
             except Exception:
                 session['status'] = 'failed'

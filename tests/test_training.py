@@ -148,32 +148,102 @@ def assert_nested_equal(first, second):
 
 
 @pytest.mark.parametrize('optimizer', ['sgd', 'adam'])
-def test_mid_batch_resume_matches_uninterrupted_training(tmp_path, monkeypatch, optimizer):
+def test_epoch_resume_replays_unfinished_epoch_and_matches_uninterrupted_training(tmp_path, monkeypatch, optimizer):
     monkeypatch.setattr(train, 'CompactMixNet', TinyNet)
     common = ['--smoke', '--dataset', 'cifar10', '--device', 'cpu', '--workers', '0',
-              '--optimizer', optimizer, '--checkpoint-every', '1', '--log-every', '2']
+              '--optimizer', optimizer]
     straight, paused = tmp_path / 'straight', tmp_path / 'paused'
     assert train.main(common + ['--new', '--output-root', str(straight)]) == 0
-    assert train.main(common + ['--new', '--output-root', str(paused), '--stop-after-steps', '2']) == 0
+    assert train.main(common + ['--new', '--output-root', str(paused), '--stop-after-steps', '5']) == 0
     halfway = train.recover_checkpoint(job_directory(paused))
-    assert halfway['state']['epoch'] == 0
-    assert halfway['state']['next_batch'] == 2
-    assert halfway['state']['global_step'] == 2
+    assert halfway['state']['epoch'] == 1
+    assert halfway['state']['next_batch'] == 0
+    assert halfway['state']['global_step'] == 4
     assert halfway['state']['phase'] == 'train'
-    assert train.main(['--smoke', '--output-root', str(paused), '--log-every', '2']) == 0
+    checkpoint_path = job_directory(paused) / 'last.pt'
+    previous_bytes = checkpoint_path.read_bytes()
+    assert train.main(['--smoke', '--output-root', str(paused), '--stop-after-steps', '1']) == 0
+    assert checkpoint_path.read_bytes() == previous_bytes
+    assert train.main(['--smoke', '--output-root', str(paused)]) == 0
     first = train.recover_checkpoint(job_directory(straight))
     second = train.recover_checkpoint(job_directory(paused))
     for key in ('model', 'ema', 'optimizer', 'scaler'):
         assert_nested_equal(first[key], second[key])
     assert first['state']['global_step'] == second['state']['global_step'] == 8
-    assert second['state']['phase'] == 'complete'
+    assert second['state']['phase'] == 'test'
     for left, right in zip(first['state']['history'], second['state']['history']):
-        assert_nested_equal({key: value for key, value in left.items() if key != 'train_seconds'},
-                            {key: value for key, value in right.items() if key != 'train_seconds'})
+        assert_nested_equal({key: value for key, value in left.items()
+                             if key not in ('train_seconds', 'epoch_seconds')},
+                            {key: value for key, value in right.items()
+                             if key not in ('train_seconds', 'epoch_seconds')})
     result = json.loads((job_directory(paused) / 'result.json').read_text())
     assert result['synthetic'] and not result['target_met']
     assert sum(map(sum, result['test']['confusion_matrix'])) == 16
     assert len((job_directory(paused) / 'metrics.csv').read_text().splitlines()) == 3
+
+
+def test_stop_before_first_epoch_creates_no_checkpoint(tmp_path, monkeypatch):
+    monkeypatch.setattr(train, 'CompactMixNet', TinyNet)
+    arguments = ['--smoke', '--dataset', 'cifar10', '--device', 'cpu', '--output-root', str(tmp_path)]
+    assert train.main(arguments + ['--stop-after-steps', '2']) == 0
+    directory = job_directory(tmp_path)
+    assert train.recover_checkpoint(directory) is None
+    assert not list(directory.glob('*.pt'))
+    assert not (directory / 'metrics.csv').exists()
+    assert train.main(arguments) == 0
+    checkpoint = train.recover_checkpoint(directory)
+    assert checkpoint['state']['epoch'] == 2
+    assert checkpoint['state']['global_step'] == 8
+
+
+def test_only_completed_epochs_write_checkpoints_and_progress_logs(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(train, 'CompactMixNet', TinyNet)
+    checkpoint_writes = []
+    original_checkpoint = train.atomic_checkpoint
+
+    def record_checkpoint(path, payload, rotate=False):
+        checkpoint_writes.append((Path(path).name, payload.get('epoch'), payload.get('state')))
+        original_checkpoint(path, payload, rotate)
+
+    monkeypatch.setattr(train, 'atomic_checkpoint', record_checkpoint)
+    arguments = ['--smoke', '--dataset', 'cifar10', '--device', 'cpu', '--output-root', str(tmp_path)]
+    assert train.main(arguments) == 0
+    messages = capsys.readouterr().out.splitlines()
+    assert len(messages) == 3
+    assert 'EPOCH 1/2' in messages[0] and 'checkpoint=last.pt' in messages[0]
+    assert 'EPOCH 2/2' in messages[1] and 'checkpoint=last.pt' in messages[1]
+    assert 'RESULT cifar10' in messages[2]
+    progress = [state for name, _, state in checkpoint_writes if name == 'last.pt']
+    assert [state['epoch'] for state in progress] == [1, 2]
+    assert all(state['next_batch'] == 0 for state in progress)
+    assert all(len(state['history']) == state['epoch'] for state in progress)
+    assert all(name in ('best.pt', 'last.pt') for name, _, _ in checkpoint_writes)
+    assert all(epoch in (1, 2) for name, epoch, _ in checkpoint_writes if name == 'best.pt')
+    saved_bytes = (job_directory(tmp_path) / 'last.pt').read_bytes()
+    checkpoint_writes.clear()
+    assert train.main(arguments + ['--resume', str(session_directory(tmp_path))]) == 0
+    assert not checkpoint_writes
+    assert (job_directory(tmp_path) / 'last.pt').read_bytes() == saved_bytes
+
+
+def test_interrupted_validation_does_not_save_incomplete_epoch(tmp_path, monkeypatch):
+    monkeypatch.setattr(train, 'CompactMixNet', TinyNet)
+    original_evaluate = train.evaluate
+    evaluations = []
+
+    def interrupted_evaluate(*arguments):
+        evaluations.append(True)
+        if len(evaluations) == 2:
+            train.request_stop(None, None)
+        return original_evaluate(*arguments)
+
+    monkeypatch.setattr(train, 'evaluate', interrupted_evaluate)
+    arguments = ['--smoke', '--dataset', 'cifar10', '--device', 'cpu', '--output-root', str(tmp_path)]
+    assert train.main(arguments) == 0
+    assert not list(job_directory(tmp_path).glob('*.pt'))
+    monkeypatch.setattr(train, 'evaluate', original_evaluate)
+    assert train.main(arguments) == 0
+    assert train.recover_checkpoint(job_directory(tmp_path))['state']['epoch'] == 2
 
 
 def test_both_datasets_complete_and_new_runs_do_not_overwrite(tmp_path, monkeypatch):
@@ -192,7 +262,7 @@ def test_both_datasets_complete_and_new_runs_do_not_overwrite(tmp_path, monkeypa
 def test_resume_rejects_changed_source_without_touching_checkpoint(tmp_path, monkeypatch):
     monkeypatch.setattr(train, 'CompactMixNet', TinyNet)
     arguments = ['--smoke', '--dataset', 'cifar10', '--device', 'cpu', '--output-root', str(tmp_path)]
-    assert train.main(arguments + ['--stop-after-steps', '1']) == 0
+    assert train.main(arguments + ['--stop-after-steps', '5']) == 0
     path = job_directory(tmp_path) / 'last.pt'
     previous_bytes = path.read_bytes()
     monkeypatch.setattr(train, 'source_hash', lambda: 'different-source')
@@ -211,7 +281,7 @@ def test_matrix_contains_required_optimizers_and_learning_rates(tmp_path):
 
 
 @pytest.mark.parametrize('arguments', [['--epochs', '0'], ['--lr', 'nan'], ['--workers', '-1'],
-                                      ['--checkpoint-every', '0'], ['--new', '--resume', 'old']])
+                                      ['--batch-size', '0'], ['--new', '--resume', 'old']])
 def test_invalid_cli_settings_fail(arguments):
     with pytest.raises(SystemExit):
         train.parse_args(arguments)

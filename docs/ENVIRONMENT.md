@@ -63,9 +63,9 @@ the policy refusal. System-wide cleanup must not be described as fully complete.
 
 ## Verification
 
-- All 22 tests pass, including model budgets, Windows worker reproducibility,
+- At the time of the environment audit, all 22 tests passed, including model budgets, Windows worker reproducibility,
   corrupted-checkpoint recovery and exact CPU SGD/Adam resume equivalence.
-- A short real CIFAR-100 CUDA run used batch size 128 and approximately 1.86 GiB
+- Before the later epoch-only checkpoint change, a short real CIFAR-100 CUDA run used batch size 128 and approximately 1.86 GiB
   peak allocated GPU memory without AMP skips. It stopped after batch two and
   resumed at batch three, then saved after batch four.
 - Its raw/EMA weights, optimizer state, AMP scaler and partial-epoch metrics
@@ -73,3 +73,14 @@ the policy refusal. System-wide cleanup must not be described as fully complete.
 - These are execution/resume checks only, not evidence of 98%/95% accuracy.
 - Verification runs are isolated in outputs/rebuilt_verification. Normal
   python train.py uses outputs/rebuilt and starts the intended two-dataset queue.
+
+The training workflow now logs and saves checkpoints only after each completed
+training/validation epoch. Interrupted epochs replay from the preceding epoch
+checkpoint. The historical batch-resume checks above describe the earlier
+workflow; current tests cover epoch resume and interrupted validation.
+
+The later request to delete outputs/rebuilt, outputs/rebuilt_smoke and
+outputs/rebuilt_verification was rejected by automatic command review with
+"blocked by policy". Those run histories remain on disk. No Python training
+processes were present during the process audit. Start python train.py --new
+after the code change to create a session with the current source hash.

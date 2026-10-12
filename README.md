@@ -11,12 +11,13 @@ pipeline mới không cần timm hay pretrained weights, không tự cài packag
 
 Lệnh này chạy dualpath trên CIFAR-10 rồi CIFAR-100, mỗi dataset 600 epochs,
 SGD LR 0.1, batch 128, workers 2, AMP trên CUDA. Đây là queue train dài;
-không khởi chạy thêm cửa sổ train song song. Log ghi ngay ra terminal và file.
+không khởi chạy thêm cửa sổ train song song. Terminal và file log chỉ ghi một
+dòng tổng kết khi mỗi epoch đã train và validation xong, cùng kết quả test cuối run.
 
 Nếu phiên gần nhất chưa hoàn thành, chính lệnh trên tiếp tục từ checkpoint.
 Nếu phiên trước đã hoàn thành, lệnh tạo phiên mới, không ghi đè kết quả cũ.
 Khi resume, recipe của phiên được giữ nguyên; muốn đổi epochs/model/LR/batch
-thì thêm --new. Log/checkpoint frequency và --download vẫn có thể đổi khi resume.
+thì thêm --new. --download vẫn có thể bật khi resume.
 
 **98% CIFAR-10 / 95% CIFAR-100 là mục tiêu, chưa phải kết quả đo được và không
 được cam kết.** Đề Final exam.docx yêu cầu <=6M tham số và <1 GFLOP. Hai biến thể
@@ -25,16 +26,16 @@ mục tiêu rất khó. Không thay số đo, không lấy validation thay test 
 
 ## Dừng và chạy tiếp
 
-- Nhấn Ctrl+C một lần: trainer hoàn tất batch đang xử lý, lưu checkpoint rồi dừng.
-- Chạy lại python train.py: tiếp tục đúng batch kế tiếp của checkpoint.
-- Mất điện/End Task/kill không thể tạo checkpoint mới: khôi phục checkpoint
-  bền vững gần nhất. Mặc định lưu mỗi 50 batches hoặc 120 giây tại ranh giới batch.
-- Nếu cần lưu từng batch, chấp nhận chậm hơn do I/O:
-
-    python train.py --checkpoint-every 1
-
-- Validation/test bị ngắt sẽ được đánh giá lại từ đầu, không train lại các batch
-  đã được lưu. last.pt lỗi/mất sẽ thử previous.pt.
+- Checkpoint chỉ ghi sau khi hoàn thành cả train và validation của mỗi epoch.
+  Không ghi lúc khởi động, giữa epoch, khi dừng hoặc sau test.
+- Nhấn Ctrl+C một lần: trainer hoàn tất batch đang xử lý rồi dừng, giữ nguyên
+  checkpoint của epoch hoàn tất gần nhất.
+- Chạy lại python train.py: bắt đầu từ epoch kế tiếp của checkpoint. Epoch đang
+  train hoặc validation dở sẽ được chạy lại từ đầu.
+- Nếu chưa hoàn tất epoch đầu tiên, chưa có checkpoint; chạy lại từ epoch 1.
+- Mất điện/End Task/kill cũng khôi phục theo epoch hoàn tất gần nhất.
+- Test bị ngắt sẽ được đánh giá lại từ đầu, không train lại epoch đã hoàn tất.
+  last.pt lỗi/mất sẽ thử previous.pt của epoch trước.
 - Không xóa lock bằng tay: lock do hệ điều hành quản lý và tự nhả khi process chết.
 - Không sửa train.py trong lúc một phiên đang chạy; hash code chặn resume sai
   kiến trúc/logic. Sau khi đổi code, bắt đầu --new.
@@ -93,16 +94,18 @@ deterministic để ưu tiên tốc độ; mặc định ưu tiên reproducibili
             split.json               chỉ số train/validation, SHA256
             terminal.log             log riêng run, append khi resume
             metrics.csv              mỗi epoch một dòng, không trùng khi resume
-            last.pt                  model + EMA + optimizer + scaler + RNG + vị trí
-            previous.pt              checkpoint dự phòng
-            best.pt                  weights chọn bằng validation
+            last.pt                  trạng thái sau epoch hoàn tất gần nhất
+            previous.pt              checkpoint của epoch hoàn tất trước đó
+            best.pt                  weights chọn bằng validation cuối epoch
             result.json              test metrics, target_met, profile và provenance
             confusion_matrix.json    ma trận nhầm lẫn test
         cifar100_dualpath_sgd_lr0.1/
             ...
 
-Terminal hiển thị epoch/batch, loss, mixed train accuracy, validation raw/EMA,
-LR, ảnh/giây, ETA epoch, peak VRAM, AMP skips và mỗi lần save checkpoint.
+Mỗi epoch chỉ có một dòng: dataset/model/optimizer, epoch, loss, mixed train
+accuracy, validation raw/EMA, best accuracy, LR, thời gian, peak VRAM, AMP skips
+và xác nhận checkpoint=last.pt. Không có log tiến độ batch hoặc dòng save riêng.
+Khi dừng có thông báo trạng thái; lỗi vẫn được hiển thị để xử lý.
 Train accuracy có MixUp/CutMix nên không so trực tiếp với accuracy ảnh sạch.
 Train/validation chia 45k/5k từ training set; test 10k chỉ chạy sau khi train xong.
 Best checkpoint được chọn bằng validation, không dùng test để chọn model.
@@ -116,7 +119,8 @@ Kết quả có top-1, top-5, macro F1 và recall từng class.
   không tuyên bố novelty. Cần xác nhận điều kiện không trùng kiến trúc với giảng viên.
 - docs/ARCHITECTURE.md giải thích cấu trúc, recipe, FLOP convention và resume.
 - tests/test_training.py kiểm tra budgets, splits, sampler, RNG, atomic save,
-  corrupt-checkpoint fallback, locks, SGD/Adam resume so với chạy liền mạch.
+  corrupt-checkpoint fallback, locks, SGD/Adam resume theo epoch so với chạy
+  liền mạch, và không tạo checkpoint cho epoch đang dở.
 
     python -B -m pytest -q
 

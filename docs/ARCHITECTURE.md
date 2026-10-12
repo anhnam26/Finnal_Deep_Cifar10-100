@@ -55,7 +55,8 @@ Official 10,000-image test data is opened only after all epochs have finished.
 - CutMix alpha=1 on 50% of batches, MixUp alpha=0.2 on 25%, none on 25%.
 - Mixing is disabled for the final min(30, epochs//10) epochs; AutoAugment remains.
 - Soft-target cross-entropy, label smoothing 0.05, gradient norm clipping at 5.
-- CUDA float16 AMP with initial scale 4096; optimizer skips/scale are logged.
+- CUDA float16 AMP with initial scale 4096; optimizer skips are counted in the
+  single end-of-epoch summary.
 - EMA decay min(0.999, (1+updates)/(10+updates)); floating buffers are averaged,
   integer buffers copied. No extra BatchNorm calibration or hidden test tuning.
 - Raw and EMA models are evaluated on validation every epoch; the best validation
@@ -75,12 +76,17 @@ and do not claim a single favorable trial proves reliable 98%/95% performance.
 
 ## Durability and reproducibility
 
-Checkpoint contents include raw/EMA weights, optimizer, AMP scaler, epoch,
-next batch, completed optimizer-step count, partial-epoch weighted metrics,
-full epoch history, RNG states, configuration, split hash and source hash.
+Checkpoint contents include raw/EMA weights, optimizer, AMP scaler, completed
+epoch count, completed optimizer-step count, full epoch history, RNG states,
+configuration, split hash and source hash. Checkpoints are written only after
+both training and validation finish. The next batch is always zero in new
+checkpoints. No checkpoint is written at startup, during batches, before
+validation, on interruption or after final test. best.pt is updated only at the
+same completed-epoch boundary when validation improves.
 The epoch shuffle is reproducible, and each image's augmentation has its own
 seed derived from seed/epoch/original index. Worker prefetch and worker restart
-therefore cannot alter which augmented samples are used after a mid-epoch resume.
+therefore cannot alter which augmented samples are used when an interrupted
+epoch is replayed after resuming from the previous completed epoch.
 DataLoader has a separate RNG so recreating its iterator does not perturb the
 training RNG. The per-batch scheduler is reconstructed from the saved position.
 
@@ -91,20 +97,28 @@ Checkpoint rotation can briefly leave last.pt absent, so previous.pt is always
 considered during recovery. PyTorch deserialization is trusted-local-only:
 never point resume at downloaded/untrusted checkpoint files.
 
-Ctrl+C/SIGTERM request a safe stop after the in-flight batch, rather than raising
-KeyboardInterrupt in the middle of optimizer updates. Validation/test restarts
-from its beginning if interrupted; completed training batches are not replayed.
+Ctrl+C/SIGTERM request a stop after the in-flight batch. The interrupted epoch's
+training and validation are replayed from the preceding completed checkpoint.
+If the first epoch is interrupted, no checkpoint exists and training restarts
+from initialization. If only final test is interrupted, test restarts from its
+beginning using the already saved best weights. A completed result.json allows
+the queue to skip a finished run without writing another model checkpoint.
 An OS-managed exclusive file lock prevents two trainers in the same output root;
 the OS releases it after a crash, so stale PID text does not require deletion.
 
 A hard kill, power failure or hardware failure cannot execute a new save.
-It resumes from the last completed durable checkpoint: by default every 50
-batches or 120 seconds, whichever threshold is reached first at a batch boundary.
---checkpoint-every 1 minimizes lost completed batches at significant disk-I/O
-cost. Unfinished writes never become the active checkpoint. No software can
+It resumes from the last fully completed epoch checkpoint. Work since that
+epoch is discarded. Batch/time-based checkpoint and progress-log options have
+been removed. Unfinished writes never become the active checkpoint. No software can
 guarantee disk survival or save the currently executing CUDA kernel on power loss.
 Exact bitwise recovery is tested in the same environment; PyTorch does not
 promise identical results across different platforms, versions or devices.
+
+Normal progress logging is one summary line per completed epoch, emitted after
+the checkpoint and metrics.csv have been written. It includes training loss and
+mixed accuracy, validation raw/EMA and best accuracy, LR, elapsed train plus
+validation time, peak allocated GPU memory and AMP skips. Final test produces
+one result line. Stop/error/recovery messages are emitted only when needed.
 
 ## Sources for established components
 
