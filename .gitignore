@@ -9,3 +9,4 @@ __pycache__/
 *.pth
 KnowLedge/
 BT1/
+.vscode
