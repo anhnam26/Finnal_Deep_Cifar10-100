@@ -133,4 +133,4 @@ checkpoint của kiến trúc cũ; kết quả mới chỉ nằm trong outputs/r
 
 Kiểm kê môi trường Python và những phần dọn hệ thống còn bị chặn được ghi rõ
 trong docs/ENVIRONMENT.md. VS Code hiện dùng Python 3.13 Microsoft Store;
-Python 3.14 còn giữ riêng cho free-claude-code, không dùng để train project này.
+free-claude-code và Python 3.14 đã được gỡ theo xác nhận của bạn.

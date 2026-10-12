@@ -22,6 +22,11 @@ or the selected installation's packages to simplify the interpreter list.
 
 - Uninstalled uv-managed CPython 3.11.16 and 3.13.15 using uv python uninstall.
 - The uv-managed python3.13.exe launcher in .local/bin was also removed by uv.
+- After explicit user approval, uninstalled free-claude-code 5.15.0 and all 12
+  fcc-* entry points, then uninstalled uv-managed CPython 3.14.0 and its launcher.
+- Verified the tool environment, 3.14 installation and python3.14.exe launcher
+  are absent. uv tool list is empty, and uv python list --only-installed now
+  finds only the preserved Microsoft Store Python 3.13.14 installation.
 - uv cache prune removed temporary cached environments/unused entries and
   reported approximately 1.1 GiB of cached files removed.
 - No project source, datasets, model results or selected-interpreter packages
@@ -29,12 +34,11 @@ or the selected installation's packages to simplify the interpreter list.
 
 ## Remaining exceptions and incomplete cleanup
 
-uv-managed Python 3.14.0 is retained because the installed free-claude-code 5.15.0
-tool requires Python >=3.14. An offline reinstall against the selected Python
-3.13, constrained to the exact installed package versions, was rejected by the
-dependency resolver. The tool remains at 5.15.0 with its existing entry points.
-Removing this remaining Python installation requires explicitly accepting that
-free-claude-code must also be removed or replaced. It is not a training dependency.
+free-claude-code previously required Python >=3.14 and could not be migrated to
+the selected Python 3.13. The user subsequently approved removing both the tool
+and its 3.14 runtime. Neither remains installed, and neither was a training
+dependency. Existing application configuration outside the managed tool
+environment was not removed.
 
 LM Studio's embedded Python/runtime is application-owned, not a separately
 selected development environment, and was not removed.
