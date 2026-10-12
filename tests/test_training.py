@@ -259,15 +259,53 @@ def test_both_datasets_complete_and_new_runs_do_not_overwrite(tmp_path, monkeypa
     assert (original / 'results.json').exists()
 
 
-def test_resume_rejects_changed_source_without_touching_checkpoint(tmp_path, monkeypatch):
+def test_explicit_resume_rejects_changed_source_without_touching_checkpoint(tmp_path, monkeypatch):
     monkeypatch.setattr(train, 'CompactMixNet', TinyNet)
     arguments = ['--smoke', '--dataset', 'cifar10', '--device', 'cpu', '--output-root', str(tmp_path)]
     assert train.main(arguments + ['--stop-after-steps', '5']) == 0
     path = job_directory(tmp_path) / 'last.pt'
     previous_bytes = path.read_bytes()
+    original_session = session_directory(tmp_path)
     monkeypatch.setattr(train, 'source_hash', lambda: 'different-source')
-    assert train.main(arguments) == 1
+    assert train.main(arguments + ['--resume', str(original_session)]) == 1
     assert path.read_bytes() == previous_bytes
+    assert session_directory(tmp_path) == original_session
+
+
+@pytest.mark.parametrize('changed_field', ['source_sha256', 'version'])
+def test_auto_resume_starts_new_run_for_incompatible_session(tmp_path, monkeypatch, changed_field):
+    monkeypatch.setattr(train, 'CompactMixNet', TinyNet)
+    arguments = ['--smoke', '--dataset', 'cifar10', '--device', 'cpu', '--output-root', str(tmp_path)]
+    assert train.main(arguments + ['--stop-after-steps', '5']) == 0
+    original_session = session_directory(tmp_path)
+    checkpoint_path = job_directory(tmp_path) / 'last.pt'
+    checkpoint_bytes = checkpoint_path.read_bytes()
+    session_path = original_session / 'session.json'
+    document = json.loads(session_path.read_text())
+    document[changed_field] = 'old-source' if changed_field == 'source_sha256' else 0
+    train.atomic_json(session_path, document)
+    session_bytes = session_path.read_bytes()
+    assert train.main(arguments) == 0
+    new_session = session_directory(tmp_path)
+    assert new_session != original_session
+    assert checkpoint_path.read_bytes() == checkpoint_bytes
+    assert session_path.read_bytes() == session_bytes
+    new_document = json.loads((new_session / 'session.json').read_text())
+    assert new_document['source_sha256'] == train.source_hash()
+    assert new_document['version'] == train.VERSION
+    assert new_document['status'] == 'complete'
+
+
+def test_auto_resume_recovers_missing_session_directory(tmp_path):
+    missing = tmp_path / 'removed-run'
+    train.atomic_json(tmp_path / 'latest_session.json', {'directory': str(missing)})
+    args = train.parse_args(['--device', 'cpu'])
+    directory, session = train.choose_session(args, tmp_path)
+    assert directory.exists() and directory != missing
+    assert session['source_sha256'] == train.source_hash()
+    assert session_directory(tmp_path) == directory
+    with pytest.raises(FileNotFoundError):
+        train.choose_session(train.parse_args(['--resume', str(missing)]), tmp_path)
 
 
 def test_matrix_contains_required_optimizers_and_learning_rates(tmp_path):

@@ -120,6 +120,12 @@ mixed accuracy, validation raw/EMA and best accuracy, LR, elapsed train plus
 validation time, peak allocated GPU memory and AMP skips. Final test produces
 one result line. Stop/error/recovery messages are emitted only when needed.
 
+The default automatic resume starts a new session if the latest session's
+source hash/version differs or its directory has been removed. Existing results
+and checkpoints are retained. Explicit --resume remains strict and rejects
+incompatible sessions, preventing old weights from being loaded into changed
+training code. Compatible unfinished sessions still resume normally.
+
 ## Sources for established components
 
 - Residual learning: https://arxiv.org/abs/1512.03385

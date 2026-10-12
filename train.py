@@ -794,10 +794,17 @@ def choose_session(args, output_root):
             pointer = json.loads((output_root / 'latest_session.json').read_text(encoding='utf-8'))
             path = Path(pointer['directory'])
         if path is not None:
-            session = json.loads((path / 'session.json').read_text(encoding='utf-8'))
+            try:
+                session = json.loads((path / 'session.json').read_text(encoding='utf-8'))
+            except FileNotFoundError:
+                if args.resume != 'auto':
+                    raise
+                return create_session(args, output_root)
             if session['status'] != 'complete' or args.resume != 'auto':
                 if session['source_sha256'] != source_hash() or session['version'] != VERSION:
-                    raise ValueError('Session code changed; use --new instead of resuming')
+                    if args.resume != 'auto':
+                        raise ValueError('Session code changed; use --new instead of resuming')
+                    return create_session(args, output_root)
                 return path, session
     return create_session(args, output_root)
 

@@ -82,5 +82,6 @@ workflow; current tests cover epoch resume and interrupted validation.
 The later request to delete outputs/rebuilt, outputs/rebuilt_smoke and
 outputs/rebuilt_verification was rejected by automatic command review with
 "blocked by policy". Those run histories remain on disk. No Python training
-processes were present during the process audit. Start python train.py --new
-after the code change to create a session with the current source hash.
+processes were present during the process audit. Running python train.py now
+automatically creates a new session when the latest session has a different
+source hash/version or its directory is missing.

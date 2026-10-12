@@ -14,7 +14,9 @@ SGD LR 0.1, batch 128, workers 2, AMP trên CUDA. Đây là queue train dài;
 không khởi chạy thêm cửa sổ train song song. Terminal và file log chỉ ghi một
 dòng tổng kết khi mỗi epoch đã train và validation xong, cùng kết quả test cuối run.
 
-Nếu phiên gần nhất chưa hoàn thành, chính lệnh trên tiếp tục từ checkpoint.
+Nếu phiên gần nhất chưa hoàn thành và cùng phiên bản code, chính lệnh trên
+tiếp tục từ checkpoint. Nếu code đã đổi hoặc thư mục phiên cũ đã bị xóa,
+lệnh tự tạo phiên mới với code hiện tại.
 Nếu phiên trước đã hoàn thành, lệnh tạo phiên mới, không ghi đè kết quả cũ.
 Khi resume, recipe của phiên được giữ nguyên; muốn đổi epochs/model/LR/batch
 thì thêm --new. --download vẫn có thể bật khi resume.
@@ -37,8 +39,9 @@ mục tiêu rất khó. Không thay số đo, không lấy validation thay test 
 - Test bị ngắt sẽ được đánh giá lại từ đầu, không train lại epoch đã hoàn tất.
   last.pt lỗi/mất sẽ thử previous.pt của epoch trước.
 - Không xóa lock bằng tay: lock do hệ điều hành quản lý và tự nhả khi process chết.
-- Không sửa train.py trong lúc một phiên đang chạy; hash code chặn resume sai
-  kiến trúc/logic. Sau khi đổi code, bắt đầu --new.
+- Không sửa train.py trong lúc một phiên đang chạy. Sau khi đổi code, chạy trực
+  tiếp sẽ tự tạo phiên mới. --resume chỉ định phiên cũ vẫn kiểm tra hash code
+  và từ chối nếu kiến trúc/logic đã thay đổi.
 
 ## Các lệnh cần dùng
 
