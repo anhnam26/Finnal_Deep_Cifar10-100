@@ -4,6 +4,7 @@ import sys
 import site
 
 ROOT = Path(__file__).resolve().parents[1]
+(ROOT / 'experiments').mkdir(exist_ok=True)
 site.addsitedir(str(ROOT / '.deps'))
 sys.path.insert(0, str(ROOT / '.deps'))
 os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')

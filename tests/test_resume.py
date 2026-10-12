@@ -124,3 +124,15 @@ def test_incomplete_epoch_does_not_replace_last(tmp_path, monkeypatch):
     with pytest.raises(KeyboardInterrupt):
         engine.run_experiment(cfg)
     assert (tmp_path / 'last.pt').read_bytes() == original
+
+
+def test_windows_worker_restart_replays_the_same_augmented_samples(tmp_path):
+    from src.datasets import prepare_data, make_loader
+    cfg = tiny_config(tmp_path)
+    source, split = prepare_data(cfg)
+    first = list(make_loader(source, split['training'], cfg, epoch=7, training=True))
+    cfg['workers'] = 2
+    second = list(make_loader(source, split['training'], cfg, epoch=7, training=True))
+    for (a, labels_a), (b, labels_b) in zip(first, second):
+        assert torch.equal(a, b)
+        assert torch.equal(labels_a, labels_b)
