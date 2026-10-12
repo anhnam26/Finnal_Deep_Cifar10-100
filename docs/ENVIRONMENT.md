@@ -19,8 +19,9 @@ to this same installation. No new Python interpreter is downloaded or used.
 
 The original `.venv` creation/download was stopped following user steering.
 The user then explicitly requested deletion. Automatic command review rejected
-the native PowerShell deletion with `blocked by policy`; that partial directory
-is unused and its deletion remains unverified. Do not select it in the IDE.
+the agent's native PowerShell deletion with `blocked by policy`. The final
+filesystem check confirms `.venv` no longer exists; no claim is made that the
+rejected agent command removed it. All commands use the existing interpreter.
 
 Before/after inventories in `reports/generated/isolation-audit.json` confirm
 global Python distributions and `~/.codex/config.toml` unchanged. No files were

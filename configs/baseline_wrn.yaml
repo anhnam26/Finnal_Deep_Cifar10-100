@@ -1,0 +1,6 @@
+model:
+  family: wrn
+epochs: 600
+optimizer: sgd
+lr: 0.1
+weight_decay: 0.0005

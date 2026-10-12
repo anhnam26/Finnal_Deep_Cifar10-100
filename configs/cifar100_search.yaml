@@ -1,0 +1,4 @@
+epochs: 30
+batch_size: 128
+seed: 42
+search_families: [compactmix, wrn, preactresnet, convnext, convnextv2, efficientnet, mobilenet]

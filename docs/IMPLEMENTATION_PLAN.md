@@ -49,4 +49,5 @@ or global Codex configuration changes. Accuracy targets are unverified goals.
 
 User steering: creation of `.venv` was cancelled. Its deletion was requested
 explicitly but automatic command review rejected deletion with `blocked by
-policy`. Do not use that partial directory. Continue with the existing Python.
+policy`. A later filesystem check confirms `.venv` is absent. Continue with the
+existing Python; do not create another environment.
