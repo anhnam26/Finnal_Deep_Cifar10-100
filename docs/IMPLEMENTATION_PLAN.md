@@ -5,8 +5,10 @@ and the user's request to build now and leave long training to them.
 
 ## Design
 
-Keep one public entry point, `python train.py`, with automatic handoff to the
-repository `.venv`. Train CIFAR-10 followed by CIFAR-100, from scratch. Rebuild
+Keep one public entry point, `python train.py`, using the user's selected
+Microsoft Store Python 3.13 and existing CUDA PyTorch. Missing dependencies go
+into repository `.deps`, without creating or downloading a Python environment.
+Train CIFAR-10 followed by CIFAR-100, from scratch. Rebuild
 the existing CompactMixNet idea as configurable CompactMix-L: CIFAR stem,
 split depthwise branches, grouped spatial mixing, channel gate and residual
 blocks. Count inference operations using two FLOPs per multiply-add, including
@@ -27,7 +29,7 @@ batch progress, epoch metrics, ETA, VRAM and checkpoint paths.
 
 ## Work units and verification
 
-1. Local environment: isolated venv and pinned dependencies, before/after
+1. Local dependencies: reuse the selected interpreter, before/after
    inventories, local MCP launcher. Verify CUDA forward/backward and imports.
 2. Model: configurable custom model, WRN, PreActResNet and CIFAR ConvNeXt
    baselines. Verify output dimensions, gradients and counted budgets.
@@ -44,3 +46,7 @@ Create a Conventional Commit on the current branch after each validated unit.
 Preserve unrelated deleted documentation/tests until replaced as part of the
 authorized rebuild; never stage unrelated deletions. No pushes, global installs
 or global Codex configuration changes. Accuracy targets are unverified goals.
+
+User steering: creation of `.venv` was cancelled. Its deletion was requested
+explicitly but automatic command review rejected deletion with `blocked by
+policy`. Do not use that partial directory. Continue with the existing Python.

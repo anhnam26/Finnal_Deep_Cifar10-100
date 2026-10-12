@@ -17,3 +17,4 @@ checkpoints/
 experiments/
 reports/generated/
 .coverage
+.deps/

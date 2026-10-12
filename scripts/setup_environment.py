@@ -1,4 +1,4 @@
-"""Install only into PROJECT_ROOT/.venv, with a project-local pip cache."""
+"""Reuse existing Python; install missing distributions only into .deps."""
 import argparse
 import hashlib
 import importlib.metadata
@@ -7,7 +7,6 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-import venv
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS = ROOT / "reports" / "generated"
@@ -27,14 +26,13 @@ def inventory():
     return {"files": files,
             "config_sha256": hashlib.sha256(config.read_bytes()).hexdigest()
             if config.exists() else None,
-            "packages": sorted((d.metadata["Name"], d.version)
+            "packages": sorted([d.metadata["Name"], d.version]
                                for d in importlib.metadata.distributions())}
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--audit-after", action="store_true")
-    parser.add_argument("--cpu", action="store_true")
     args = parser.parse_args()
     REPORTS.mkdir(parents=True, exist_ok=True)
     before_path = REPORTS / "isolation-before.json"
@@ -53,27 +51,46 @@ def main():
         return
     if not before_path.exists():
         before_path.write_text(json.dumps(inventory()), encoding="utf-8")
-    directory = ROOT / ".venv"
-    python = directory / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    if not python.exists():
-        venv.EnvBuilder(with_pip=True).create(directory)
+    from packaging.requirements import Requirement
+    directory = ROOT / ".deps"
+    directory.mkdir(exist_ok=True)
+    paths = [str(directory), *sys.path]
     env = dict(os.environ, PIP_CACHE_DIR=str(ROOT / ".cache" / "pip"),
-               PYTHONNOUSERSITE="1", PIP_DISABLE_PIP_VERSION_CHECK="1")
-    def pip(*arguments):
-        subprocess.run([str(python), "-m", "pip", *arguments],
-                       cwd=ROOT, env=env, check=True)
-    pip("install", "--upgrade", "pip")
-    index = "cpu" if args.cpu else "cu118"
-    pip("install", "torch==2.7.1", "torchvision==0.22.1",
-        "--index-url", f"https://download.pytorch.org/whl/{index}")
-    pip("install", "-r", str(ROOT / "requirements.txt"))
-    frozen = subprocess.check_output([str(python), "-m", "pip", "freeze"], env=env, text=True)
-    (ROOT / "requirements-lock.txt").write_text(frozen, encoding="utf-8")
-    subprocess.run([str(python), "-c",
-                    "import torch,timm,optuna; print(torch.__version__,timm.__version__,optuna.__version__); "
-                    "print('CUDA',torch.cuda.is_available()); "
-                    "print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"],
-                   cwd=ROOT, env=env, check=True)
+               PIP_DISABLE_PIP_VERSION_CHECK="1")
+    queue = [line.strip() for line in (ROOT / "requirements.txt").read_text().splitlines()
+             if line.strip() and not line.startswith("#")]
+    checked = set()
+    resolved = {}
+    while queue:
+        raw = queue.pop(0)
+        requirement = Requirement(raw)
+        if requirement.marker and not requirement.marker.evaluate({"extra": ""}):
+            continue
+        if raw in checked:
+            continue
+        checked.add(raw)
+        name = requirement.name.lower().replace("_", "-")
+        candidates = [d for d in importlib.metadata.distributions(path=paths)
+                      if d.metadata["Name"].lower().replace("_", "-") == name]
+        matching = [d for d in candidates if d.version in requirement.specifier]
+        dist = next((d for d in matching if d.version == resolved.get(name)),
+                    matching[0] if matching else None)
+        if dist is None:
+            if name in ("torch", "torchvision", "numpy"):
+                raise RuntimeError(f"Existing {name} is incompatible with {raw}; do not replace the selected runtime")
+            subprocess.run([sys.executable, "-m", "pip", "install", "--target", str(directory),
+                            "--upgrade", "--no-deps", raw], cwd=ROOT, env=env, check=True)
+            importlib.invalidate_caches()
+            dist = next(d for d in importlib.metadata.distributions(path=[str(directory)])
+                        if d.metadata["Name"].lower().replace("_", "-") == name)
+        queue.extend(dist.requires or [])
+        resolved[name] = dist.version
+    versions = sorted(f'{name}=={version}' for name, version in resolved.items())
+    (ROOT / "requirements-lock.txt").write_text("\n".join(versions) + "\n", encoding="utf-8")
+    subprocess.run([sys.executable, "-c",
+                    "import sys; sys.path.insert(0,'.deps'); import torch,timm,optuna; "
+                    "print(sys.executable); print(torch.__version__,timm.__version__,optuna.__version__); "
+                    "print('CUDA',torch.cuda.is_available())"], cwd=ROOT, env=env, check=True)
 
 
 if __name__ == "__main__":
