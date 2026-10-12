@@ -22,3 +22,13 @@ The current project migration removes `.deps` import hooks, guards entry points
 against another interpreter/venv, and uses the existing CUDA torch/torchvision.
 Old isolation reports describe the prior setup and are historical, not the
 current dependency policy. No model architecture/training recipe is changed.
+
+Migration installed 13 previously missing distributions in the selected Python.
+Audit confirms no existing distribution was upgraded, downgraded or removed;
+CUDA torch 2.7.1+cu118, torchvision 0.22.1+cu118 and NumPy 2.2.6 are unchanged.
+All checked imports resolve to this interpreter's normal user-site. Windows
+redirects its physical storage to WpSystem; that is the same Store environment.
+
+Removing the obsolete `.deps` directory with native PowerShell was rejected by
+automatic command review (`blocked by policy`). It is never imported by the
+project anymore; filesystem cleanup remains pending unless removed manually.

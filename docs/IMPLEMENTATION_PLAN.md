@@ -6,8 +6,9 @@ and the user's request to build now and leave long training to them.
 ## Design
 
 Keep one public entry point, `python train.py`, using the user's selected
-Microsoft Store Python 3.13 and existing CUDA PyTorch. Missing dependencies go
-into repository `.deps`, without creating or downloading a Python environment.
+Microsoft Store Python 3.13 and existing CUDA PyTorch. Missing dependencies are
+installed directly into that interpreter's normal package environment. Never
+create/download another Python environment or use `.deps`/pip --target.
 Train CIFAR-10 followed by CIFAR-100, from scratch. Rebuild
 the existing CompactMixNet idea as configurable CompactMix-L: CIFAR stem,
 split depthwise branches, grouped spatial mixing, channel gate and residual
@@ -29,7 +30,7 @@ batch progress, epoch metrics, ETA, VRAM and checkpoint paths.
 
 ## Work units and verification
 
-1. Local dependencies: reuse the selected interpreter, before/after
+1. Shared Python dependencies: reuse the selected interpreter, before/after
    inventories, local MCP launcher. Verify CUDA forward/backward and imports.
 2. Model: configurable custom model, WRN, PreActResNet and CIFAR ConvNeXt
    baselines. Verify output dimensions, gradients and counted budgets.
@@ -44,10 +45,14 @@ batch progress, epoch metrics, ETA, VRAM and checkpoint paths.
 
 Create a Conventional Commit on the current branch after each validated unit.
 Preserve unrelated deleted documentation/tests until replaced as part of the
-authorized rebuild; never stage unrelated deletions. No pushes, global installs
-or global Codex configuration changes. Accuracy targets are unverified goals.
+authorized rebuild; never stage unrelated deletions. No pushes. Python package
+additions into the selected interpreter and the global AGENTS.md policy update
+are explicitly authorized; no global plugin/MCP configuration changes.
+Accuracy targets are unverified goals.
 
 User steering: creation of `.venv` was cancelled. Its deletion was requested
 explicitly but automatic command review rejected deletion with `blocked by
 policy`. A later filesystem check confirms `.venv` is absent. Continue with the
-existing Python; do not create another environment.
+existing Python; do not create another environment. Later steering explicitly
+requires libraries in this same shared Python installation for all projects;
+the earlier project-local dependency policy is superseded.

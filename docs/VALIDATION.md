@@ -1,5 +1,27 @@
 # Verification on October 13, 2026
 
+## Current single-environment policy
+
+After the user's all-project Python instruction, the project uses only the
+existing Microsoft Store Python 3.13 and its own package environment. The
+global AGENTS.md and project instructions match. New runtime guards reject a
+different executable, version or venv prefix. No `.deps` import hooks remain.
+
+Current full suite: **40 passed** (the prior 36 plus four Python policy cases).
+The setup script was run successfully and idempotently in the selected Python.
+Thirteen missing distributions were installed in its normal user-site; no
+existing packages changed version or were removed. torch 2.7.1+cu118,
+torchvision 0.22.1+cu118 and NumPy 2.2.6 stayed unchanged; checked package imports
+all resolve within that environment (`shared-python-audit.json`).
+
+One synthetic CUDA epoch per dataset completed using normal global imports,
+with valid last/best checkpoints and no AMP skips. This is a technical smoke
+check, not accuracy evidence. MCP launches with the exact selected alias.
+`.venv` is absent; native deletion of old `.deps` was rejected by automatic
+review, so its unused directory cleanup remains pending.
+
+## Prior research pipeline verification
+
 `python -X utf8 -m pytest -q`: **36 passed**. Tests cover:
 
 - Custom L / WRN / PreActResNet / CIFAR ConvNeXt forward, gradients and budgets
@@ -43,10 +65,11 @@ in README/ARCHITECTURE; profiler estimates are separate from measured VRAM.
 Project skill validator passed; both skill helpers executed. Optuna MCP STDIO
 initialized, listed 26 tools and queried study names successfully. `codex mcp
 list` showed the project Optuna server enabled with the selected interpreter.
-Source compilation and git whitespace checks passed. Package setup was rerun
-idempotently without downloading an interpreter, creating a venv, or replacing
-the existing CUDA PyTorch. Global packages/config audit unchanged; observed
-external Codex metadata changes are recorded in ENVIRONMENT.md.
+Source compilation and git whitespace checks passed. Earlier package setup was
+rerun idempotently without downloading an interpreter, creating a venv, or
+replacing CUDA PyTorch. That earlier isolation audit is historical; the current
+policy explicitly authorizes package installation in the existing shared Python
+and the global AGENTS.md change, as recorded above and in ENVIRONMENT.md.
 
 Final filesystem check: `.venv` absent. The rejected deletion command is not
 represented as a successful agent action. The default full user run has not

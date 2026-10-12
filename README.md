@@ -2,8 +2,9 @@
 
 Chạy tại `D:\DeepLearning\Finnal`, dùng đúng **Python 3.13 đang chọn trong
 VS Code**. PyTorch 2.7.1+cu118/torchvision hiện tại đã chạy được CUDA trên RTX
-4060 Laptop 8 GB. Chương trình dùng interpreter hiện tại và nạp thư viện bổ sung
-từ `.deps` trong repository; không tạo hoặc tải môi trường Python khác.
+4060 Laptop 8 GB. Chương trình chỉ dùng interpreter này và thư viện cài trực tiếp
+trong môi trường của nó; không tạo/tải môi trường Python khác hoặc nạp `.deps`.
+Luật áp dụng cho mọi dự án nằm tại `C:\Users\anhna\.codex\AGENTS.md`.
 
 ```powershell
 python -u train.py
@@ -189,7 +190,8 @@ Skill nằm ở `.agents/skills/cifar-sota-architect/`; quy tắc tại `AGENTS.
 Optuna MCP chỉ tại `.codex/config.toml`, dùng Python hiện tại và launcher nội bộ.
 `codex mcp list` đã nhìn thấy server; STDIO initialize/list tools đã được kiểm tra.
 Sau khi đổi vị trí repository/interpreter, chạy `python scripts/configure_mcp.py`
-để tạo lại đường dẫn nội bộ. Không ghi global trust hoặc global Codex config.
+để tạo lại đường dẫn nội bộ. Luật Python global đã được cập nhật theo yêu cầu;
+MCP vẫn chỉ được đăng ký trong dự án, không sửa global trust/Codex config.toml.
 
 ```powershell
 python scripts/setup_environment.py
@@ -197,15 +199,20 @@ python -m pytest -q --basetemp experiments/test-temp
 python -u train.py --smoke --dataset both --device cpu --no-tensorboard
 ```
 
-Script setup **chỉ khi thiếu thư viện**, không tạo `.venv`, không tải Python hay
-PyTorch mới; thiếu/incompatible PyTorch sẽ báo lỗi để giữ interpreter hiện tại.
-`requirements-lock.txt` là snapshot dependency, không phải lệnh thay môi trường.
+Script setup dùng chính xác
+`C:\Users\anhna\AppData\Local\Microsoft\WindowsApps\python3.13.exe -m pip`.
+Thư viện thiếu được cài vào user-site thông thường của cùng môi trường này;
+script không tạo `.venv`, `.deps`, tải Python khác hoặc dùng pip `--target`.
+Nó giữ nguyên phiên bản CUDA torch/torchvision/NumPy hiện tại qua constraints.
+`requirements-lock.txt` ghi phiên bản các dependency trực tiếp của dự án.
+Entry point sẽ từ chối chạy nếu interpreter hoặc prefix thuộc môi trường khác.
 
-Xem `docs/ENVIRONMENT.md` và `reports/generated/isolation-audit.json` cho audit.
-Lệnh xóa `.venv` của agent từng bị kiểm duyệt tự động từ chối; kiểm tra cuối
-xác nhận thư mục đó **không còn tồn tại**. Không có gói Python mới được cài global và global
-Codex config giữ nguyên. Hai marker metadata plugin của Codex đổi trong phiên
-được ghi lại riêng, không khẳng định mọi file ngoài repository đều bất biến.
+Xem `docs/PYTHON_POLICY.md`, `docs/ENVIRONMENT.md` và
+`reports/generated/shared-python-audit.json`. Audit xác nhận thư viện nạp từ
+Python 3.13 đã chọn, không có package cũ bị đổi/xóa. `.venv` không còn tồn tại.
+Thao tác xóa bản thư viện `.deps` cũ bị kiểm duyệt tự động từ chối; không entry
+point nào nạp thư mục đó, nhưng phần xóa trên đĩa chưa hoàn tất. Các báo cáo
+`isolation-*.json` trước đây chỉ mô tả setup cũ, không phải chính sách hiện tại.
 
 Thử nghiệm đầu tiên đề xuất: `python -u train.py` với model L và SGD mặc định.
 Nếu muốn kiểm tra learning curve rẻ trước full budget, chạy
