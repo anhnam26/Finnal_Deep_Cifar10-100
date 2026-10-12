@@ -18,7 +18,7 @@ def document(directory):
     return json.loads(path.read_text(encoding='utf-8'))
 
 
-def finalize(selection_directory, stop_after_epochs=None):
+def finalize(selection_directory, stop_after_epochs=None, verbose=False):
     selection_directory = Path(selection_directory).resolve()
     result = document(selection_directory)
     if result['phase'] != 'selection' or result['status'] != 'complete':
@@ -41,14 +41,15 @@ def finalize(selection_directory, stop_after_epochs=None):
             raise ValueError('Frozen final recipe changed; existing final run preserved')
     else:
         engine.atomic_json(freeze_path, freeze)
-    print(f'FINAL FREEZE {config["dataset"]}: retrain all 50k for {config["epochs"]} frozen epochs; weights={config["final_weights"]}', flush=True)
+    if verbose:
+        print(f'FINAL FREEZE {config["dataset"]}: retrain all 50k for {config["epochs"]} frozen epochs; weights={config["final_weights"]}', flush=True)
     trained = engine.run_experiment(config, stop_after_epochs)
     if trained['status'] == 'interrupted':
         return trained
-    return evaluate_final(directory)
+    return evaluate_final(directory, verbose=verbose)
 
 
-def evaluate_final(directory):
+def evaluate_final(directory, verbose=True):
     directory = Path(directory).resolve()
     with engine.run_lock(directory):
         result = document(directory)
@@ -61,7 +62,8 @@ def evaluate_final(directory):
         if result['test_accuracy'] is not None:
             if result['test_checkpoint_sha256'] != digest:
                 raise ValueError('Test checkpoint changed after evaluation; refusing reuse')
-            print(f'CACHED TEST {config["dataset"]}: {result["test_accuracy"]:.2f}%', flush=True)
+            if verbose:
+                print(f'CACHED TEST {config["dataset"]}: {result["test_accuracy"]:.2f}%', flush=True)
             return result
         freeze = json.loads((directory / 'frozen.json').read_text(encoding='utf-8'))
         if freeze['source_sha256'] != engine.source_fingerprint() or freeze['config'] != config:
@@ -77,5 +79,6 @@ def evaluate_final(directory):
         target = 98. if classes == 10 else 90.
         result['target_met'] = metrics['accuracy'] >= target
         engine.atomic_json(directory / 'result.json', result)
-        print(f'TEST {config["dataset"]} top1={metrics["accuracy"]:.2f}% top5={metrics["top5_accuracy"]:.2f}% macroF1={metrics["macro_f1"]:.4f} target_met={result["target_met"]}', flush=True)
+        if verbose:
+            print(f'TEST {config["dataset"]} top1={metrics["accuracy"]:.2f}% top5={metrics["top5_accuracy"]:.2f}% macroF1={metrics["macro_f1"]:.4f} target_met={result["target_met"]}', flush=True)
         return result

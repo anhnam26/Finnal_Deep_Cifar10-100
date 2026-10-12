@@ -151,11 +151,10 @@ def duration(seconds):
     return f'{seconds//3600:02d}:{seconds//60%60:02d}:{seconds%60:02d}'
 
 
-def train_epoch(model, ema, optimizer, scaler, source, split, config, epoch, global_step, logger):
+def train_epoch(model, ema, optimizer, scaler, source, split, config, epoch, global_step):
     loader = make_loader(source, split['training'], config, epoch, training=True)
     model.train()
     loss_sum = correct = seen = skips = 0
-    started = time.monotonic()
     for batch, (images, labels) in enumerate(loader):
         images, labels = images.to(config['device'], non_blocking=True), labels.to(config['device'], non_blocking=True)
         images, targets, paired, coefficient = mix_batch(images, labels, split['classes'], config, epoch)
@@ -185,12 +184,6 @@ def train_epoch(model, ema, optimizer, scaler, source, split, config, epoch, glo
         correct += (coefficient * prediction.eq(labels).sum().item()
                     + (1-coefficient) * prediction.eq(paired).sum().item())
         seen += n
-        if (batch+1) % config['log_every'] == 0 or batch+1 == len(loader):
-            elapsed = time.monotonic() - started
-            eta = elapsed / (batch+1) * (len(loader)-batch-1)
-            logger.info('TRAIN epoch=%d/%d batch=%d/%d loss=%.4f mixed_acc=%.2f%% lr=%.6g speed=%.0f img/s epoch_ETA=%s',
-                        epoch+1, config['epochs'], batch+1, len(loader), loss_sum/seen,
-                        100*correct/seen, lr, seen/max(.001, elapsed), duration(eta))
     return {'train_loss': loss_sum/seen, 'train_mixed_accuracy': 100*correct/seen,
             'lr': lr, 'amp_skips': skips}, global_step
 
@@ -240,8 +233,8 @@ def write_history(directory, history):
 def validate_config(config):
     if config['phase'] not in ('selection', 'final'):
         raise ValueError('phase must be selection or final')
-    if min(config['epochs'], config['batch_size'], config['log_every']) < 1 or config['workers'] < 0:
-        raise ValueError('Invalid epoch/batch/worker/log settings')
+    if min(config['epochs'], config['batch_size']) < 1 or config['workers'] < 0:
+        raise ValueError('Invalid epoch/batch/worker settings')
     if not 0 <= config['label_smoothing'] < 1 or not 0 <= config['mix_probability'] <= 1:
         raise ValueError('Invalid label smoothing or mixing probability')
     if config['lr'] <= 0 or config['weight_decay'] < 0 or config['grad_clip'] <= 0:
@@ -272,7 +265,6 @@ def run_experiment(config, stop_after_epochs=None, epoch_callback=None):
                 if previous['environment'] != env:
                     raise ValueError('Changed runtime environment; exact resume requires the recorded environment')
                 if (directory / 'result.json').exists() and previous['epoch'] == config['epochs']:
-                    logger.info('DONE already complete; skipping %s', directory.name)
                     return json.loads((directory / 'result.json').read_text(encoding='utf-8'))
             seed_everything(config['seed'], config['deterministic'])
             source, split = prepare_data(config)
@@ -284,6 +276,7 @@ def run_experiment(config, stop_after_epochs=None, epoch_callback=None):
             optimizer = make_optimizer(model, config)
             scaler = torch.amp.GradScaler('cuda', enabled=config['device'] == 'cuda' and config['amp'], init_scale=4096.)
             history, best_weights = [], None
+            best_needs_repair = False
             epoch, global_step, best_accuracy, best_epoch, best_kind, elapsed_seconds = 0, 0, -1., 0, 'raw', 0.
             if previous:
                 model.load_state_dict(previous['model'])
@@ -302,11 +295,7 @@ def run_experiment(config, stop_after_epochs=None, epoch_callback=None):
                     best_document = None
                 if (best_document is None or best_document['epoch'] != best_epoch
                         or best_document['accuracy'] != best_accuracy):
-                    atomic_torch(best_path, {'model': best_weights, 'epoch': best_epoch,
-                                           'accuracy': best_accuracy, 'kind': best_kind, 'config': config})
-                    logger.info('RECOVERY reconstructed best.pt from durable last.pt')
-                logger.info('RESUME completed_epoch=%d next_epoch=%d/%d best_val=%.2f%% @%d',
-                            epoch, epoch+1, config['epochs'], best_accuracy, best_epoch)
+                    best_needs_repair = True
             try:
                 git_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
             except (OSError, subprocess.CalledProcessError):
@@ -317,27 +306,12 @@ def run_experiment(config, stop_after_epochs=None, epoch_callback=None):
                         'git_commit': git_commit, 'source_sha256': identity, 'profile': profile,
                         'started_at_utc': previous['started_at_utc'] if previous else datetime.now(timezone.utc).isoformat()})
             metadata = json.loads((directory / 'metadata.json').read_text(encoding='utf-8'))
-            logger.info('RUN %s | dataset=%s phase=%s device=%s train=%d val=%d synthetic=%s subset=%s',
-                        directory.name, config['dataset'], config['phase'], config['device'],
-                        len(split['training']), len(split['validation']), split['synthetic'], split['subset'])
-            logger.info('MODEL %s | params=%s FLOPs=%.6fG MACs=%.6fG stages=%s widths=%s depths=%s',
-                        config['model']['family'], f"{profile['parameters']:,}", profile['flops']/1e9,
-                        profile['macs']/1e9, profile['resolutions'], profile['widths'], profile['depths'])
-            logger.info('RECIPE %s lr=%g wd=%g momentum=%g epochs=%d batch=%d warmup=%g schedule=%s aug=%s mixup=%g cutmix=%g EMA=%g AMP=%s seed=%d',
-                        config['optimizer'], config['lr'], config['weight_decay'], config['momentum'],
-                        config['epochs'], config['batch_size'], config['warmup'], config['scheduler'],
-                        config['augmentation'], config['mixup'], config['cutmix'], config['ema_decay'],
-                        scaler.is_enabled(), config['seed'])
-            logger.info('CHECKPOINTS last=%s best=%s', last, directory / 'best.pt')
-            if config['tensorboard']:
-                from torch.utils.tensorboard import SummaryWriter
-                writer = SummaryWriter(str(directory / 'tensorboard'), purge_step=epoch+1)
             completed_this_call = 0
             while epoch < config['epochs']:
                 started = time.monotonic()
                 if config['device'] == 'cuda':
                     torch.cuda.reset_peak_memory_stats()
-                metrics, global_step = train_epoch(model, ema, optimizer, scaler, source, split, config, epoch, global_step, logger)
+                metrics, global_step = train_epoch(model, ema, optimizer, scaler, source, split, config, epoch, global_step)
                 if config['phase'] == 'selection':
                     loader = make_loader(source, split['validation'], config, 0)
                     raw = evaluate(model, loader, config['device'])
@@ -358,6 +332,9 @@ def run_experiment(config, stop_after_epochs=None, epoch_callback=None):
                 history.append(record)
                 seconds = time.monotonic() - started
                 elapsed_seconds += seconds
+                if config['tensorboard'] and writer is None:
+                    from torch.utils.tensorboard import SummaryWriter
+                    writer = SummaryWriter(str(directory / 'tensorboard'), purge_step=epoch)
                 payload = {'version': CHECKPOINT_VERSION, 'source_sha256': identity, 'environment': env,
                            'config': config, 'split_sha256': split['sha256'], 'epoch': epoch,
                            'global_step': global_step, 'model': cpu_weights(model), 'ema': cpu_weights(ema),
@@ -365,29 +342,31 @@ def run_experiment(config, stop_after_epochs=None, epoch_callback=None):
                            'rng': capture_rng(), 'history': history, 'best_accuracy': best_accuracy,
                            'best_epoch': best_epoch, 'best_kind': best_kind, 'best_weights': best_weights,
                            'elapsed_seconds': elapsed_seconds, 'started_at_utc': metadata['started_at_utc']}
-                atomic_torch(last, payload)
-                if improved:
+                best_saved = improved or best_needs_repair
+                if best_saved:
                     atomic_torch(directory / 'best.pt', {'model': best_weights, 'epoch': best_epoch,
                                  'accuracy': best_accuracy, 'kind': best_kind, 'config': config})
+                    best_needs_repair = False
+                atomic_torch(last, payload)
                 write_history(directory, history)
                 if writer:
                     for key, value in record.items():
                         writer.add_scalar(key, value, epoch)
                     writer.flush()
                 vram = torch.cuda.max_memory_allocated()/2**30 if config['device'] == 'cuda' else 0.
-                logger.info('EPOCH %d/%d | loss=%.4f mixed_acc=%.2f%% val_raw=%s val_ema=%s best=%s @%d | lr=%.6g time=%s total_ETA=%s VRAM=%.2fGB AMP_skips=%d | saved last.pt%s',
+                logger.info('%s %s %s/%s(base_lr=%g) | EPOCH %d/%d | loss=%.4f mixed_acc=%.2f%% val_raw=%s val_ema=%s best=%s @%d | lr=%.6g time=%s total_ETA=%s VRAM=%.2fGB AMP_skips=%d | saved last.pt%s',
+                            config['dataset'], config['phase'], config['model']['family'], config['optimizer'], config['lr'],
                             epoch, config['epochs'], metrics['train_loss'], metrics['train_mixed_accuracy'],
                             f"{metrics['val_accuracy']:.2f}%" if 'val_accuracy' in metrics else 'sealed',
                             f"{metrics['ema_val_accuracy']:.2f}%" if 'ema_val_accuracy' in metrics else 'sealed',
                             f'{best_accuracy:.2f}%' if best_accuracy >= 0 else 'fixed final epoch', best_epoch,
                             metrics['lr'], duration(seconds), duration(elapsed_seconds/epoch*(config['epochs']-epoch)),
-                            vram, metrics['amp_skips'], ' + best.pt' if improved else '')
+                            vram, metrics['amp_skips'], ' + best.pt' if best_saved else '')
                 completed_this_call += 1
                 if epoch_callback:
                     epoch_callback(epoch, best_accuracy)
                 if REQUEST_STOP or (stop_after_epochs and completed_this_call >= stop_after_epochs):
                     if epoch < config['epochs']:
-                        logger.info('STOP saved completed epoch %d. Run the same command to continue.', epoch)
                         return {'status': 'interrupted', 'epoch': epoch, 'history': history}
                     break
             result = {'status': 'complete', 'experiment_id': directory.name, 'dataset': config['dataset'],
@@ -403,7 +382,6 @@ def run_experiment(config, stop_after_epochs=None, epoch_callback=None):
                       'history': history, 'config': config, 'profile': profile, 'metadata': metadata,
                       'notes': 'Synthetic/subset checks are not benchmark evidence' if split['synthetic'] or split['subset'] else ''}
             atomic_json(directory / 'result.json', result)
-            logger.info('COMPLETE %s | official test remains sealed', directory.name)
             return result
         finally:
             if writer:

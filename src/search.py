@@ -1,5 +1,6 @@
 """Persistent ask/tell Optuna studies; interrupted trials reuse their checkpoints."""
 import copy
+from contextlib import contextmanager
 from pathlib import Path
 import re
 import time
@@ -10,6 +11,16 @@ from optuna.trial import TrialState
 from .config import ROOT
 from . import engine
 from .models import build_model, profile_model
+
+
+@contextmanager
+def quiet_study_logging():
+    previous = optuna.logging.get_verbosity()
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    try:
+        yield
+    finally:
+        optuna.logging.set_verbosity(previous)
 
 
 def sample_config(trial, base):
@@ -62,7 +73,7 @@ def search(base, trials=20, study_name=None, multi_objective=False,
     root = Path(base['run_dir']).parent / ('search_' + name)
     contract = {'base': base, 'multi_objective': multi_objective,
                 'space_version': 2, 'source_sha256': engine.source_fingerprint()}
-    with engine.run_lock(root):
+    with engine.run_lock(root), quiet_study_logging():
         sampler = optuna.samplers.NSGAIISampler(seed=base['seed']) if multi_objective else optuna.samplers.TPESampler(seed=base['seed'])
         study = optuna.create_study(storage=storage, study_name=name, load_if_exists=True,
                                    directions=['maximize', 'minimize'] if multi_objective else ['maximize'],
@@ -76,7 +87,6 @@ def search(base, trials=20, study_name=None, multi_objective=False,
             if pending:
                 # Optuna exposes Trial(study, trial_id); FrozenTrial retains the ID.
                 trial = optuna.trial.Trial(study, pending[0]._trial_id)
-                print(f'OPTUNA RESUME trial={trial.number} study={name}', flush=True)
             else:
                 seed = base['seed'] + len(study.trials)
                 study.sampler = optuna.samplers.NSGAIISampler(seed=seed) if multi_objective else optuna.samplers.TPESampler(seed=seed)
@@ -107,7 +117,6 @@ def search(base, trials=20, study_name=None, multi_objective=False,
                             raise optuna.TrialPruned(f'Pruned on validation at epoch {epoch}')
                 result = engine.run_experiment(config, stop_after_epochs, callback)
                 if result['status'] == 'interrupted':
-                    print('OPTUNA paused at durable epoch; repeat the same command to resume this trial.', flush=True)
                     return study
                 trial.set_user_attr('training_time', result['training_time'])
                 trial.set_user_attr('best_validation_accuracy', result['best_val_accuracy'])
@@ -118,7 +127,6 @@ def search(base, trials=20, study_name=None, multi_objective=False,
                 trial.set_user_attr('training_time', time.monotonic()-started)
                 study.tell(trial, state=TrialState.PRUNED)
             except KeyboardInterrupt:
-                print('Trial left RUNNING for checkpoint recovery.', flush=True)
                 raise
             except Exception as error:
                 trial.set_user_attr('failure_reason', f'{type(error).__name__}: {error}')
@@ -127,5 +135,4 @@ def search(base, trials=20, study_name=None, multi_objective=False,
                 raise
             if engine.REQUEST_STOP:
                 break
-        print(f'OPTUNA {name}: {len(study.trials)} trials; database={database}', flush=True)
         return study

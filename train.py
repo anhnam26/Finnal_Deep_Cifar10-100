@@ -25,7 +25,7 @@ def parser():
     p.add_argument('--search-families', help='Comma-separated model families for Optuna')
     p.add_argument('--config', type=Path)
     for flag, kind in [('epochs', int), ('batch-size', int), ('workers', int), ('seed', int),
-                       ('lr', float), ('weight-decay', float), ('warmup', int), ('log-every', int),
+                       ('lr', float), ('weight-decay', float), ('warmup', int),
                        ('limit-train', int), ('limit-val', int)]:
         p.add_argument('--' + flag, type=kind)
     p.add_argument('--optimizer', choices=['sgd', 'adam', 'adamw'])
@@ -64,7 +64,7 @@ def configs_from_args(args):
         cfg = merge_config(default_config(dataset), supplied)
         cfg['dataset'] = dataset
         for field in ('epochs', 'batch_size', 'workers', 'seed', 'lr', 'weight_decay', 'warmup',
-                      'log_every', 'limit_train', 'limit_val', 'optimizer', 'device'):
+                      'limit_train', 'limit_val', 'optimizer', 'device'):
             value = getattr(args, field)
             if value is not None:
                 cfg[field] = value
@@ -109,12 +109,10 @@ def main(argv=None):
         if engine.REQUEST_STOP:
             raise KeyboardInterrupt
         engine.REQUEST_STOP = True
-        print('\nSTOP requested: finishing this epoch, then saving last/best. Press Ctrl+C again to stop immediately.', flush=True)
     signal.signal(signal.SIGINT, stop_handler)
     if hasattr(signal, 'SIGTERM'):
         signal.signal(signal.SIGTERM, stop_handler)
     try:
-        print(f'Python: {sys.executable}', flush=True)
         if args.report:
             from src.reporting import build_reports
             build_reports()
@@ -122,11 +120,11 @@ def main(argv=None):
         if args.finalize or args.evaluate:
             from src.finalize import finalize, evaluate_final
             if args.finalize:
-                finalize(args.finalize, args.stop_after_epochs)
+                finalize(args.finalize, args.stop_after_epochs, verbose=False)
             else:
                 evaluate_final(args.evaluate)
             from src.reporting import build_reports
-            build_reports()
+            build_reports(verbose=False)
             return 0
         configurations = configs_from_args(args)
         if args.profile:
@@ -142,11 +140,10 @@ def main(argv=None):
                 if engine.REQUEST_STOP:
                     break
             from src.reporting import build_reports
-            build_reports()
+            build_reports(verbose=False)
             return 0
         completed = []
-        for index, config in enumerate(configurations, 1):
-            print(f"\nQUEUE {index}/{len(configurations)}: {config['dataset']} {config['optimizer']} LR={config['lr']}\n", flush=True)
+        for config in configurations:
             result = engine.run_experiment(config, args.stop_after_epochs)
             if result['status'] == 'interrupted' or engine.REQUEST_STOP:
                 break
@@ -158,15 +155,15 @@ def main(argv=None):
                 if not candidates:
                     continue
                 winner = max(candidates, key=lambda r: r['best_val_accuracy'])
-                final_result = finalize(Path(winner['config']['run_dir']), args.stop_after_epochs)
+                final_result = finalize(Path(winner['config']['run_dir']), args.stop_after_epochs, verbose=False)
                 if final_result['status'] == 'interrupted' or engine.REQUEST_STOP:
                     break
         if (ROOT / 'src' / 'reporting.py').exists():
             from src.reporting import build_reports
-            build_reports()
+            build_reports(verbose=False)
         return 0
     except KeyboardInterrupt:
-        print('\nStopped immediately. Repeat the same command to replay the unfinished epoch from last.pt.', flush=True)
+        print('Stopped immediately. Repeat the same command to replay the unfinished epoch from last.pt.', file=sys.stderr, flush=True)
         return 130
     except Exception as error:
         print(f'ERROR: {type(error).__name__}: {error}', file=sys.stderr, flush=True)

@@ -28,7 +28,7 @@ def score(value):
     return '' if value is None else f'{value:.2f}'
 
 
-def build_reports(roots=None, report_root=None, result_path=None):
+def build_reports(roots=None, report_root=None, result_path=None, verbose=True):
     roots = roots or [ROOT / 'checkpoints', ROOT / 'experiments' / 'smoke', ROOT / 'experiments' / 'verification']
     report_root = Path(report_root or ROOT / 'reports' / 'generated')
     result_path = Path(result_path or ROOT / 'experiments' / 'results' / 'results.csv')
@@ -79,5 +79,6 @@ def build_reports(roots=None, report_root=None, result_path=None):
     paragraph('Oral exam preparation: explain depthwise vs grouped convolution, residual gradient flow, receptive fields, SE, parameter/FLOP arithmetic, SGD momentum vs Adam moments, cosine warmup, regularization, mixed-label training accuracy, validation/test leakage and exactly what is restored from a checkpoint.')
     paragraph('Sources: Final exam.docx; github.com/akira-n-28/convnext-muon-cifar10 (README claims 98.10%, 12.37M parameters; not independently verified and over this exam budget); github.com/huggingface/pytorch-image-models; arxiv.org/abs/1512.03385; arxiv.org/abs/1709.01507; arxiv.org/abs/1710.09412; arxiv.org/abs/1905.04899; docs.pytorch.org/docs/stable/notes/randomness.html.')
     atomic_write(report_root / 'final_report.pdf', lambda stream: stream.write(bytes(pdf.output())), binary=True)
-    print(f'REPORT PDF={report_root / "final_report.pdf"} CSV={result_path}', flush=True)
+    if verbose:
+        print(f'REPORT PDF={report_root / "final_report.pdf"} CSV={result_path}', flush=True)
     return results

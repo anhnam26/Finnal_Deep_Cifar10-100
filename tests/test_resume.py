@@ -15,9 +15,11 @@ def tiny_config(tmp_path, optimizer='sgd'):
 
 
 @pytest.mark.parametrize('optimizer', ['sgd', 'adam'])
-def test_epoch_resume_matches_uninterrupted_training(tmp_path, optimizer):
+@pytest.mark.parametrize('tensorboard', [False, True])
+def test_epoch_resume_matches_uninterrupted_training(tmp_path, optimizer, tensorboard):
     from src.engine import run_experiment, load_checkpoint
     cfg = tiny_config(tmp_path / 'resume', optimizer)
+    cfg['tensorboard'] = tensorboard
     partial = run_experiment(cfg, stop_after_epochs=1)
     assert partial['status'] == 'interrupted'
     ckpt = load_checkpoint(Path(cfg['run_dir']) / 'last.pt')
