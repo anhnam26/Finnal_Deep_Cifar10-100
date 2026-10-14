@@ -900,7 +900,7 @@ def render_docx(content, runs):
 def supplementary(runs):
     # Keep byte hashes stable across Git checkouts; generated images are reviewed visually.
     (OUT / ".gitattributes").write_text(
-        "* -text\n*.pdf binary\n*.docx binary\n*.png binary\n*.svg binary\n*.pt binary\n",
+        "* -text whitespace=cr-at-eol\n*.pdf binary\n*.docx binary\n*.png binary\n*.svg binary\n*.pt binary\n",
         encoding="utf-8")
     rows = []
     for dataset, item in runs.items():

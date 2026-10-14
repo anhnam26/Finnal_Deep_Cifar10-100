@@ -1,0 +1,43 @@
+{
+  "dataset": "cifar100",
+  "model": {
+    "family": "compactmix"
+  },
+  "epochs": 600,
+  "batch_size": 128,
+  "workers": 2,
+  "seed": 42,
+  "split_seed": 2026,
+  "optimizer": "sgd",
+  "lr": 0.1,
+  "weight_decay": 0.0005,
+  "momentum": 0.9,
+  "warmup": 5,
+  "scheduler": "cosine",
+  "label_smoothing": 0.05,
+  "mixup": 0.2,
+  "cutmix": 1.0,
+  "mix_probability": 0.75,
+  "augmentation": "autoaugment",
+  "random_erasing": 0.0,
+  "ema_decay": 0.999,
+  "grad_clip": 5.0,
+  "amp": true,
+  "deterministic": true,
+  "tensorboard": true,
+  "device": "cuda",
+  "data_root": "D:\\DeepLearning\\Finnal\\datasets",
+  "run_dir": "D:\\DeepLearning\\Finnal\\checkpoints\\default_cifar100_compactmix_sgd_lr0.1_seed42",
+  "download": true,
+  "smoke": false,
+  "limit_train": 0,
+  "limit_val": 0,
+  "phase": "selection",
+  "final_weights": "ema",
+  "search_families": [
+    "compactmix",
+    "wrn",
+    "preactresnet",
+    "convnext"
+  ]
+}

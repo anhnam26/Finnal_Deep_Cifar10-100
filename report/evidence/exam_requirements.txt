@@ -1,0 +1,16 @@
+Requirements for the final examination:
+Design a lightweight model (so-called L) that is in accordance with several conditions as follows:
+Its number of learnable parameters is not over 6M.
+Its FLOP is under 1G.
+Train and test L on CIFAR-10 and CIFAR-100 in consideration of different initial learning rates: e.g., 0.1, 0.15,… along with optimizers: SGD and Adam. Report the learning settings in detail (e.g., momentum, learning rate, epochs,….).
+All above should be figured out a pdf file for a final report.
+Submit on time all subject to a link (provide later).
+Evaluation criteria:
+Answer several oral exam questions (30%).
+The performance of L on CIFAR-10 (30%), the score is evaluated subject to the performance of L ranked among the student groups.
+The performance of L on CIFAR-100 (30%), the score is evaluated subject to the performance of L ranked among the student groups.
+The quality of the final report (10%)
+Note:
+If you cannot reply well (i.e., not pass) the oral exam questions, you will fall this course.
+Two groups with the same model (architecture) will not be assessed.
+The proposed model L is not the quite same as previous networks, except your proposed model in the midterm examination.

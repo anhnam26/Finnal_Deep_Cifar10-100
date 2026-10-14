@@ -1,0 +1,262 @@
+﻿name,type,conv_kind,input_shape,output_shape,kernel,stride,padding,groups,parameters
+stem.0,Conv2d,dense/pointwise,"[1, 3, 32, 32]","[1, 40, 32, 32]","[3, 3]","[1, 1]","[1, 1]",1,1080
+stages.0.0.pre.0,BatchNorm2d,BatchNorm2d,"[1, 40, 32, 32]","[1, 40, 32, 32]",,,,,80
+stages.0.0.pre.1,SiLU,SiLU,"[1, 40, 32, 32]","[1, 40, 32, 32]",,,,,0
+stages.0.0.pre.2,Conv2d,dense/pointwise,"[1, 40, 32, 32]","[1, 80, 32, 32]","[1, 1]","[1, 1]","[0, 0]",1,3200
+stages.0.0.pre.3,BatchNorm2d,BatchNorm2d,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,160
+stages.0.0.pre.4,SiLU,SiLU,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,0
+stages.0.0.local,Conv2d,depthwise,"[1, 40, 32, 32]","[1, 40, 32, 32]","[3, 3]","[1, 1]","[1, 1]",40,360
+stages.0.0.context,Conv2d,depthwise,"[1, 40, 32, 32]","[1, 40, 32, 32]","[5, 5]","[1, 1]","[2, 2]",40,1000
+stages.0.0.mix.0,BatchNorm2d,BatchNorm2d,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,160
+stages.0.0.mix.1,SiLU,SiLU,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,0
+stages.0.0.mix.2,Conv2d,grouped,"[1, 80, 32, 32]","[1, 80, 32, 32]","[3, 3]","[1, 1]","[1, 1]",8,7200
+stages.0.0.mix.3,BatchNorm2d,BatchNorm2d,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,160
+stages.0.0.mix.4,SiLU,SiLU,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,0
+stages.0.0.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 80, 32, 32]","[1, 80, 1, 1]",,,,,0
+stages.0.0.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 80, 1, 1]","[1, 8, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,648
+stages.0.0.mix.5.gate.1,SiLU,SiLU,"[1, 8, 1, 1]","[1, 8, 1, 1]",,,,,0
+stages.0.0.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 8, 1, 1]","[1, 80, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,720
+stages.0.0.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 80, 1, 1]","[1, 80, 1, 1]",,,,,0
+stages.0.0.mix.6,Conv2d,dense/pointwise,"[1, 80, 32, 32]","[1, 40, 32, 32]","[1, 1]","[1, 1]","[0, 0]",1,3200
+stages.0.0.drop,DropPath,DropPath,"[1, 40, 32, 32]","[1, 40, 32, 32]",,,,,0
+stages.0.1.pre.0,BatchNorm2d,BatchNorm2d,"[1, 40, 32, 32]","[1, 40, 32, 32]",,,,,80
+stages.0.1.pre.1,SiLU,SiLU,"[1, 40, 32, 32]","[1, 40, 32, 32]",,,,,0
+stages.0.1.pre.2,Conv2d,dense/pointwise,"[1, 40, 32, 32]","[1, 80, 32, 32]","[1, 1]","[1, 1]","[0, 0]",1,3200
+stages.0.1.pre.3,BatchNorm2d,BatchNorm2d,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,160
+stages.0.1.pre.4,SiLU,SiLU,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,0
+stages.0.1.local,Conv2d,depthwise,"[1, 40, 32, 32]","[1, 40, 32, 32]","[3, 3]","[1, 1]","[1, 1]",40,360
+stages.0.1.context,Conv2d,depthwise,"[1, 40, 32, 32]","[1, 40, 32, 32]","[5, 5]","[1, 1]","[2, 2]",40,1000
+stages.0.1.mix.0,BatchNorm2d,BatchNorm2d,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,160
+stages.0.1.mix.1,SiLU,SiLU,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,0
+stages.0.1.mix.2,Conv2d,grouped,"[1, 80, 32, 32]","[1, 80, 32, 32]","[3, 3]","[1, 1]","[1, 1]",8,7200
+stages.0.1.mix.3,BatchNorm2d,BatchNorm2d,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,160
+stages.0.1.mix.4,SiLU,SiLU,"[1, 80, 32, 32]","[1, 80, 32, 32]",,,,,0
+stages.0.1.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 80, 32, 32]","[1, 80, 1, 1]",,,,,0
+stages.0.1.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 80, 1, 1]","[1, 8, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,648
+stages.0.1.mix.5.gate.1,SiLU,SiLU,"[1, 8, 1, 1]","[1, 8, 1, 1]",,,,,0
+stages.0.1.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 8, 1, 1]","[1, 80, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,720
+stages.0.1.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 80, 1, 1]","[1, 80, 1, 1]",,,,,0
+stages.0.1.mix.6,Conv2d,dense/pointwise,"[1, 80, 32, 32]","[1, 40, 32, 32]","[1, 1]","[1, 1]","[0, 0]",1,3200
+stages.0.1.drop,DropPath,DropPath,"[1, 40, 32, 32]","[1, 40, 32, 32]",,,,,0
+stages.1.0,BatchNorm2d,BatchNorm2d,"[1, 40, 32, 32]","[1, 40, 32, 32]",,,,,80
+stages.1.1,SiLU,SiLU,"[1, 40, 32, 32]","[1, 40, 32, 32]",,,,,0
+stages.1.2,AvgPool2d,AvgPool2d,"[1, 40, 32, 32]","[1, 40, 16, 16]",,,,,0
+stages.1.3,Conv2d,dense/pointwise,"[1, 40, 16, 16]","[1, 112, 16, 16]","[1, 1]","[1, 1]","[0, 0]",1,4480
+stages.1.4.pre.0,BatchNorm2d,BatchNorm2d,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,224
+stages.1.4.pre.1,SiLU,SiLU,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,0
+stages.1.4.pre.2,Conv2d,dense/pointwise,"[1, 112, 16, 16]","[1, 224, 16, 16]","[1, 1]","[1, 1]","[0, 0]",1,25088
+stages.1.4.pre.3,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.4.pre.4,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.4.local,Conv2d,depthwise,"[1, 112, 16, 16]","[1, 112, 16, 16]","[3, 3]","[1, 1]","[1, 1]",112,1008
+stages.1.4.context,Conv2d,depthwise,"[1, 112, 16, 16]","[1, 112, 16, 16]","[5, 5]","[1, 1]","[2, 2]",112,2800
+stages.1.4.mix.0,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.4.mix.1,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.4.mix.2,Conv2d,grouped,"[1, 224, 16, 16]","[1, 224, 16, 16]","[3, 3]","[1, 1]","[1, 1]",8,56448
+stages.1.4.mix.3,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.4.mix.4,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.4.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 224, 16, 16]","[1, 224, 1, 1]",,,,,0
+stages.1.4.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 224, 1, 1]","[1, 14, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,3150
+stages.1.4.mix.5.gate.1,SiLU,SiLU,"[1, 14, 1, 1]","[1, 14, 1, 1]",,,,,0
+stages.1.4.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 14, 1, 1]","[1, 224, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,3360
+stages.1.4.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 224, 1, 1]","[1, 224, 1, 1]",,,,,0
+stages.1.4.mix.6,Conv2d,dense/pointwise,"[1, 224, 16, 16]","[1, 112, 16, 16]","[1, 1]","[1, 1]","[0, 0]",1,25088
+stages.1.4.drop,DropPath,DropPath,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,0
+stages.1.5.pre.0,BatchNorm2d,BatchNorm2d,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,224
+stages.1.5.pre.1,SiLU,SiLU,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,0
+stages.1.5.pre.2,Conv2d,dense/pointwise,"[1, 112, 16, 16]","[1, 224, 16, 16]","[1, 1]","[1, 1]","[0, 0]",1,25088
+stages.1.5.pre.3,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.5.pre.4,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.5.local,Conv2d,depthwise,"[1, 112, 16, 16]","[1, 112, 16, 16]","[3, 3]","[1, 1]","[1, 1]",112,1008
+stages.1.5.context,Conv2d,depthwise,"[1, 112, 16, 16]","[1, 112, 16, 16]","[5, 5]","[1, 1]","[2, 2]",112,2800
+stages.1.5.mix.0,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.5.mix.1,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.5.mix.2,Conv2d,grouped,"[1, 224, 16, 16]","[1, 224, 16, 16]","[3, 3]","[1, 1]","[1, 1]",8,56448
+stages.1.5.mix.3,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.5.mix.4,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.5.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 224, 16, 16]","[1, 224, 1, 1]",,,,,0
+stages.1.5.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 224, 1, 1]","[1, 14, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,3150
+stages.1.5.mix.5.gate.1,SiLU,SiLU,"[1, 14, 1, 1]","[1, 14, 1, 1]",,,,,0
+stages.1.5.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 14, 1, 1]","[1, 224, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,3360
+stages.1.5.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 224, 1, 1]","[1, 224, 1, 1]",,,,,0
+stages.1.5.mix.6,Conv2d,dense/pointwise,"[1, 224, 16, 16]","[1, 112, 16, 16]","[1, 1]","[1, 1]","[0, 0]",1,25088
+stages.1.5.drop,DropPath,DropPath,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,0
+stages.1.6.pre.0,BatchNorm2d,BatchNorm2d,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,224
+stages.1.6.pre.1,SiLU,SiLU,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,0
+stages.1.6.pre.2,Conv2d,dense/pointwise,"[1, 112, 16, 16]","[1, 224, 16, 16]","[1, 1]","[1, 1]","[0, 0]",1,25088
+stages.1.6.pre.3,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.6.pre.4,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.6.local,Conv2d,depthwise,"[1, 112, 16, 16]","[1, 112, 16, 16]","[3, 3]","[1, 1]","[1, 1]",112,1008
+stages.1.6.context,Conv2d,depthwise,"[1, 112, 16, 16]","[1, 112, 16, 16]","[5, 5]","[1, 1]","[2, 2]",112,2800
+stages.1.6.mix.0,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.6.mix.1,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.6.mix.2,Conv2d,grouped,"[1, 224, 16, 16]","[1, 224, 16, 16]","[3, 3]","[1, 1]","[1, 1]",8,56448
+stages.1.6.mix.3,BatchNorm2d,BatchNorm2d,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,448
+stages.1.6.mix.4,SiLU,SiLU,"[1, 224, 16, 16]","[1, 224, 16, 16]",,,,,0
+stages.1.6.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 224, 16, 16]","[1, 224, 1, 1]",,,,,0
+stages.1.6.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 224, 1, 1]","[1, 14, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,3150
+stages.1.6.mix.5.gate.1,SiLU,SiLU,"[1, 14, 1, 1]","[1, 14, 1, 1]",,,,,0
+stages.1.6.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 14, 1, 1]","[1, 224, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,3360
+stages.1.6.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 224, 1, 1]","[1, 224, 1, 1]",,,,,0
+stages.1.6.mix.6,Conv2d,dense/pointwise,"[1, 224, 16, 16]","[1, 112, 16, 16]","[1, 1]","[1, 1]","[0, 0]",1,25088
+stages.1.6.drop,DropPath,DropPath,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,0
+stages.2.0,BatchNorm2d,BatchNorm2d,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,224
+stages.2.1,SiLU,SiLU,"[1, 112, 16, 16]","[1, 112, 16, 16]",,,,,0
+stages.2.2,AvgPool2d,AvgPool2d,"[1, 112, 16, 16]","[1, 112, 8, 8]",,,,,0
+stages.2.3,Conv2d,dense/pointwise,"[1, 112, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,28672
+stages.2.4.pre.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+stages.2.4.pre.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.4.pre.2,Conv2d,dense/pointwise,"[1, 256, 8, 8]","[1, 512, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.4.pre.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.4.pre.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.4.local,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[3, 3]","[1, 1]","[1, 1]",256,2304
+stages.2.4.context,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[5, 5]","[1, 1]","[2, 2]",256,6400
+stages.2.4.mix.0,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.4.mix.1,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.4.mix.2,Conv2d,grouped,"[1, 512, 8, 8]","[1, 512, 8, 8]","[3, 3]","[1, 1]","[1, 1]",8,294912
+stages.2.4.mix.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.4.mix.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.4.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 512, 8, 8]","[1, 512, 1, 1]",,,,,0
+stages.2.4.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 512, 1, 1]","[1, 32, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16416
+stages.2.4.mix.5.gate.1,SiLU,SiLU,"[1, 32, 1, 1]","[1, 32, 1, 1]",,,,,0
+stages.2.4.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 32, 1, 1]","[1, 512, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16896
+stages.2.4.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 512, 1, 1]","[1, 512, 1, 1]",,,,,0
+stages.2.4.mix.6,Conv2d,dense/pointwise,"[1, 512, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.4.drop,DropPath,DropPath,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.5.pre.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+stages.2.5.pre.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.5.pre.2,Conv2d,dense/pointwise,"[1, 256, 8, 8]","[1, 512, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.5.pre.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.5.pre.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.5.local,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[3, 3]","[1, 1]","[1, 1]",256,2304
+stages.2.5.context,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[5, 5]","[1, 1]","[2, 2]",256,6400
+stages.2.5.mix.0,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.5.mix.1,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.5.mix.2,Conv2d,grouped,"[1, 512, 8, 8]","[1, 512, 8, 8]","[3, 3]","[1, 1]","[1, 1]",8,294912
+stages.2.5.mix.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.5.mix.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.5.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 512, 8, 8]","[1, 512, 1, 1]",,,,,0
+stages.2.5.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 512, 1, 1]","[1, 32, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16416
+stages.2.5.mix.5.gate.1,SiLU,SiLU,"[1, 32, 1, 1]","[1, 32, 1, 1]",,,,,0
+stages.2.5.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 32, 1, 1]","[1, 512, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16896
+stages.2.5.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 512, 1, 1]","[1, 512, 1, 1]",,,,,0
+stages.2.5.mix.6,Conv2d,dense/pointwise,"[1, 512, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.5.drop,DropPath,DropPath,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.6.pre.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+stages.2.6.pre.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.6.pre.2,Conv2d,dense/pointwise,"[1, 256, 8, 8]","[1, 512, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.6.pre.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.6.pre.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.6.local,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[3, 3]","[1, 1]","[1, 1]",256,2304
+stages.2.6.context,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[5, 5]","[1, 1]","[2, 2]",256,6400
+stages.2.6.mix.0,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.6.mix.1,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.6.mix.2,Conv2d,grouped,"[1, 512, 8, 8]","[1, 512, 8, 8]","[3, 3]","[1, 1]","[1, 1]",8,294912
+stages.2.6.mix.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.6.mix.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.6.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 512, 8, 8]","[1, 512, 1, 1]",,,,,0
+stages.2.6.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 512, 1, 1]","[1, 32, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16416
+stages.2.6.mix.5.gate.1,SiLU,SiLU,"[1, 32, 1, 1]","[1, 32, 1, 1]",,,,,0
+stages.2.6.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 32, 1, 1]","[1, 512, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16896
+stages.2.6.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 512, 1, 1]","[1, 512, 1, 1]",,,,,0
+stages.2.6.mix.6,Conv2d,dense/pointwise,"[1, 512, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.6.drop,DropPath,DropPath,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.7.pre.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+stages.2.7.pre.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.7.pre.2,Conv2d,dense/pointwise,"[1, 256, 8, 8]","[1, 512, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.7.pre.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.7.pre.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.7.local,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[3, 3]","[1, 1]","[1, 1]",256,2304
+stages.2.7.context,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[5, 5]","[1, 1]","[2, 2]",256,6400
+stages.2.7.mix.0,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.7.mix.1,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.7.mix.2,Conv2d,grouped,"[1, 512, 8, 8]","[1, 512, 8, 8]","[3, 3]","[1, 1]","[1, 1]",8,294912
+stages.2.7.mix.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.7.mix.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.7.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 512, 8, 8]","[1, 512, 1, 1]",,,,,0
+stages.2.7.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 512, 1, 1]","[1, 32, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16416
+stages.2.7.mix.5.gate.1,SiLU,SiLU,"[1, 32, 1, 1]","[1, 32, 1, 1]",,,,,0
+stages.2.7.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 32, 1, 1]","[1, 512, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16896
+stages.2.7.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 512, 1, 1]","[1, 512, 1, 1]",,,,,0
+stages.2.7.mix.6,Conv2d,dense/pointwise,"[1, 512, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.7.drop,DropPath,DropPath,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.8.pre.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+stages.2.8.pre.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.8.pre.2,Conv2d,dense/pointwise,"[1, 256, 8, 8]","[1, 512, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.8.pre.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.8.pre.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.8.local,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[3, 3]","[1, 1]","[1, 1]",256,2304
+stages.2.8.context,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[5, 5]","[1, 1]","[2, 2]",256,6400
+stages.2.8.mix.0,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.8.mix.1,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.8.mix.2,Conv2d,grouped,"[1, 512, 8, 8]","[1, 512, 8, 8]","[3, 3]","[1, 1]","[1, 1]",8,294912
+stages.2.8.mix.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.8.mix.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.8.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 512, 8, 8]","[1, 512, 1, 1]",,,,,0
+stages.2.8.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 512, 1, 1]","[1, 32, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16416
+stages.2.8.mix.5.gate.1,SiLU,SiLU,"[1, 32, 1, 1]","[1, 32, 1, 1]",,,,,0
+stages.2.8.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 32, 1, 1]","[1, 512, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16896
+stages.2.8.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 512, 1, 1]","[1, 512, 1, 1]",,,,,0
+stages.2.8.mix.6,Conv2d,dense/pointwise,"[1, 512, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.8.drop,DropPath,DropPath,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.9.pre.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+stages.2.9.pre.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.9.pre.2,Conv2d,dense/pointwise,"[1, 256, 8, 8]","[1, 512, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.9.pre.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.9.pre.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.9.local,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[3, 3]","[1, 1]","[1, 1]",256,2304
+stages.2.9.context,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[5, 5]","[1, 1]","[2, 2]",256,6400
+stages.2.9.mix.0,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.9.mix.1,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.9.mix.2,Conv2d,grouped,"[1, 512, 8, 8]","[1, 512, 8, 8]","[3, 3]","[1, 1]","[1, 1]",8,294912
+stages.2.9.mix.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.9.mix.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.9.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 512, 8, 8]","[1, 512, 1, 1]",,,,,0
+stages.2.9.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 512, 1, 1]","[1, 32, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16416
+stages.2.9.mix.5.gate.1,SiLU,SiLU,"[1, 32, 1, 1]","[1, 32, 1, 1]",,,,,0
+stages.2.9.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 32, 1, 1]","[1, 512, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16896
+stages.2.9.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 512, 1, 1]","[1, 512, 1, 1]",,,,,0
+stages.2.9.mix.6,Conv2d,dense/pointwise,"[1, 512, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.9.drop,DropPath,DropPath,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.10.pre.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+stages.2.10.pre.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.10.pre.2,Conv2d,dense/pointwise,"[1, 256, 8, 8]","[1, 512, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.10.pre.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.10.pre.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.10.local,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[3, 3]","[1, 1]","[1, 1]",256,2304
+stages.2.10.context,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[5, 5]","[1, 1]","[2, 2]",256,6400
+stages.2.10.mix.0,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.10.mix.1,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.10.mix.2,Conv2d,grouped,"[1, 512, 8, 8]","[1, 512, 8, 8]","[3, 3]","[1, 1]","[1, 1]",8,294912
+stages.2.10.mix.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.10.mix.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.10.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 512, 8, 8]","[1, 512, 1, 1]",,,,,0
+stages.2.10.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 512, 1, 1]","[1, 32, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16416
+stages.2.10.mix.5.gate.1,SiLU,SiLU,"[1, 32, 1, 1]","[1, 32, 1, 1]",,,,,0
+stages.2.10.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 32, 1, 1]","[1, 512, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16896
+stages.2.10.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 512, 1, 1]","[1, 512, 1, 1]",,,,,0
+stages.2.10.mix.6,Conv2d,dense/pointwise,"[1, 512, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.10.drop,DropPath,DropPath,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.11.pre.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+stages.2.11.pre.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+stages.2.11.pre.2,Conv2d,dense/pointwise,"[1, 256, 8, 8]","[1, 512, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.11.pre.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.11.pre.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.11.local,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[3, 3]","[1, 1]","[1, 1]",256,2304
+stages.2.11.context,Conv2d,depthwise,"[1, 256, 8, 8]","[1, 256, 8, 8]","[5, 5]","[1, 1]","[2, 2]",256,6400
+stages.2.11.mix.0,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.11.mix.1,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.11.mix.2,Conv2d,grouped,"[1, 512, 8, 8]","[1, 512, 8, 8]","[3, 3]","[1, 1]","[1, 1]",8,294912
+stages.2.11.mix.3,BatchNorm2d,BatchNorm2d,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,1024
+stages.2.11.mix.4,SiLU,SiLU,"[1, 512, 8, 8]","[1, 512, 8, 8]",,,,,0
+stages.2.11.mix.5.pool,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 512, 8, 8]","[1, 512, 1, 1]",,,,,0
+stages.2.11.mix.5.gate.0,Conv2d,dense/pointwise,"[1, 512, 1, 1]","[1, 32, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16416
+stages.2.11.mix.5.gate.1,SiLU,SiLU,"[1, 32, 1, 1]","[1, 32, 1, 1]",,,,,0
+stages.2.11.mix.5.gate.2,Conv2d,dense/pointwise,"[1, 32, 1, 1]","[1, 512, 1, 1]","[1, 1]","[1, 1]","[0, 0]",1,16896
+stages.2.11.mix.5.gate.3,Sigmoid,Sigmoid,"[1, 512, 1, 1]","[1, 512, 1, 1]",,,,,0
+stages.2.11.mix.6,Conv2d,dense/pointwise,"[1, 512, 8, 8]","[1, 256, 8, 8]","[1, 1]","[1, 1]","[0, 0]",1,131072
+stages.2.11.drop,DropPath,DropPath,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+head.0,BatchNorm2d,BatchNorm2d,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,512
+head.1,SiLU,SiLU,"[1, 256, 8, 8]","[1, 256, 8, 8]",,,,,0
+head.2.avg,AdaptiveAvgPool2d,AdaptiveAvgPool2d,"[1, 256, 8, 8]","[1, 256, 1, 1]",,,,,0
+head.3,Dropout,Dropout,"[1, 256]","[1, 256]",,,,,0
+head.4,Linear,Linear,"[1, 256]","[1, 100]",,,,,25700
