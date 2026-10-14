@@ -18,3 +18,4 @@ experiments/
 reports/generated/
 .coverage
 .deps/
+report/
