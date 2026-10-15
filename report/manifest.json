@@ -2,7 +2,7 @@
   "captured_at": "2026-10-14T13:56:14.217308+07:00",
   "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
   "pdf_pages": 27,
-  "file_count": 111,
+  "file_count": 112,
   "verified": [
     "best weights match test SHA256",
     "10k confusion counts match top1",
@@ -457,11 +457,16 @@
     "compactmix_manual_train.py": {
       "sha256": "06fc58c8836c921769a33395563804ffc5bcf2a18483abd620bf9dea9d50a95a",
       "bytes": 86218
+    },
+    "GIAI_THICH_TAT_CA_NN_TRONG_MODEL.txt": {
+      "sha256": "8bf7dac5046514ccb5cd12345419a043def49ba54531796bb3fe663ebeebc58f",
+      "bytes": 34741
     }
   },
   "supplement_updates": {
     "LUONG_CONV_FORWARD_CHI_TIET.txt": "2026-10-15T13:40:26.497435+07:00",
     "full_model_flow_image": "2026-10-15T13:59:16.274044+07:00",
-    "compactmix_manual_train.py": "2026-10-15T14:35:27.806753+07:00"
+    "compactmix_manual_train.py": "2026-10-15T14:35:27.806753+07:00",
+    "GIAI_THICH_TAT_CA_NN_TRONG_MODEL.txt": "2026-10-15T15:01:54.416365+07:00"
   }
 }
