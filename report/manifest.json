@@ -463,8 +463,8 @@
       "bytes": 34741
     },
     "CONG_THUC_TINH_SHAPE.md": {
-      "sha256": "6fcc6f619613f328edb948f316b02cb9f301e57da20ebb86a89518ef00de6af5",
-      "bytes": 29168
+      "sha256": "89217215aabb1b93612ded3b3d80adcd390540b6f05968fd0f4cc71819309ec3",
+      "bytes": 30656
     },
     "CompactMix_CIFAR10_CIFAR100_BAO_CAO.ipynb": {
       "sha256": "0c3098972fc271ab1cd3b5609363a31cdee0554cba7228dd6af5da0c3eafd65d",
@@ -524,7 +524,7 @@
     "full_model_flow_image": "2026-10-15T13:59:16.274044+07:00",
     "compactmix_manual_train.py": "2026-10-15T14:35:27.806753+07:00",
     "GIAI_THICH_TAT_CA_NN_TRONG_MODEL.txt": "2026-10-15T15:01:54.416365+07:00",
-    "CONG_THUC_TINH_SHAPE.md": "2026-10-15T18:08:53.042669+07:00",
+    "CONG_THUC_TINH_SHAPE.md": "2026-10-16T00:47:49.433111+07:00",
     "CompactMix_CIFAR10_CIFAR100_BAO_CAO.ipynb": "2026-10-15T22:13:15.911497+07:00",
     "HUONG_DAN_NOTEBOOK_BAO_CAO.md": "2026-10-15T21:54:00.897238+07:00",
     "BAO_CAO_THEO_DE_FINAL_EXAM.pdf": "2026-10-15T21:54:00.897836+07:00",

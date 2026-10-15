@@ -783,27 +783,47 @@ Nếu một tham số W có gradient sau backward thì `W.grad` có cùng shape 
 
 Các hàm lưu checkpoint/JSON/CSV, logger, khóa run, RNG, fingerprint, parser, scheduler và quản lý đường dẫn không phải phép biến đổi đặc trưng `[N,C,H,W]`. Không có công thức shape layer riêng cho chúng. `make_model` dựng kiến trúc; `inspect_model`/`input_checks` quan sát và kiểm tra shape, không tự sửa.
 
-## 20. Phân biệt công thức shape và số tham số
+## 20. Công thức tính Params và GFLOPs — tra nhanh
 
-Conv:
+**Tính cho 1 ảnh (`N=1`).** Tính `H_out,W_out` trước bằng công thức shape. Đặt `b=1` nếu có bias, `b=0` nếu `bias=False`; `g=groups`.
 
-$$
-P=C_{out}\left(\frac{C_{in}}{groups}\right)k_Hk_W
-+\begin{cases}C_{out},&bias=True\\0,&bias=False\end{cases}
-$$
+| Lớp | Params (số tham số học được) | MACs/ảnh |
+|---|---|---|
+| Conv2d | `C_out*(C_in/g)*kH*kW + b*C_out` | `H_out*W_out*C_out*(C_in/g)*kH*kW` |
+| BatchNorm2d, affine=True | `2*C` (gamma + beta) | 0 MAC Conv/Linear |
+| Linear | `F_in*F_out + b*F_out` | `F_in*F_out` |
+| Activation, pooling, chunk, concat, flatten, ADD, multiply, Dropout/DropPath | 0 | 0 MAC Conv/Linear |
 
-BatchNorm affine mặc định: `P=2*C` (gamma và beta).
+**Params toàn mạng:** cộng tham số của mỗi lớp một lần; BN running statistics không phải tham số học. Params Conv không phụ thuộc batch/H/W; stride đổi H/W sẽ đổi MACs nhưng không đổi Params nếu kênh/kernel/groups giữ nguyên.
 
-Linear: `P=F_out*F_in + F_out` khi có bias.
+**FLOPs theo quy ước profiler của bài:** 1 MAC = 2 FLOPs cho phần nhân–cộng, cộng thêm chi phí dưới đây. Đặt `n` là số phần tử output, `m` là số phần tử input, tính với `N=1`.
 
-Ví dụ stem `3→40,k=3,g=1,bias=False`:
+| Phép | FLOPs/ảnh |
+|---|---|
+| Conv / Linear | `2*MACs + b*n` |
+| BatchNorm2d | `4*n` |
+| SiLU / Sigmoid | `6*n` / `4*n` |
+| AvgPool2d / AdaptiveAvgPool2d | `m+n` |
+| ADD residual / multiply SE | Mỗi phép `n` (multiply tính theo feature sau broadcast) |
+| Chunk, concat, flatten; Dropout/DropPath khi eval | 0 theo quy ước profiler |
 
 ```text
-Shape output = [N,40,32,32]
-Số tham số P = 40*(3/1)*3*3 = 1.080
+Params toàn mạng = tổng Params từng lớp
+MParams = Params / 1.000.000
+FLOPs toàn mạng = tổng FLOPs các lớp và các phép ADD/multiply
+GFLOPs = FLOPs / 1.000.000.000
 ```
 
-N, H_out, W_out không xuất hiện trong số trọng số Conv; cùng bộ trọng số được dùng trên nhiều ảnh/vị trí. Tăng stride có thể giảm H/W nhưng không tự làm giảm số trọng số nếu C/kernel/groups giữ nguyên.
+**Ví dụ stem:** Conv3×3, `3→40`, output `[1,40,32,32]`, `g=1,b=0`:
+
+```text
+Params = 40*(3/1)*3*3          = 1.080
+MACs   = 32*32*40*(3/1)*3*3    = 1.105.920
+FLOPs  = 2*1.105.920           = 2.211.840
+GFLOPs = 2.211.840/1.000.000.000 = 0,00221184
+```
+
+Không lấy `2*MACs` làm tổng FLOPs toàn mạng vì còn BN, activation, pooling, ADD và multiply. Khi cộng, đếm mỗi phép/lớp một lần, không cộng lại các cột cộng dồn. Giới hạn đề: **Params ≤6.000.000 và GFLOPs <1**.
 
 ## 21. Bảng tra nhanh khi sửa code
 
