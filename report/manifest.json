@@ -2,7 +2,7 @@
   "captured_at": "2026-10-14T13:56:14.217308+07:00",
   "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
   "pdf_pages": 27,
-  "file_count": 126,
+  "file_count": 131,
   "verified": [
     "best weights match test SHA256",
     "10k confusion counts match top1",
@@ -517,6 +517,26 @@
     "ON_TAP_VAN_DAP_VA_SUA_MODEL_TRUC_TIEP.md": {
       "sha256": "555e4acffff429634120d7dccfd7083ab5e10ac646b676ff608013e2ba31acff",
       "bytes": 42632
+    },
+    "THU_NGHIEM_NHANH_MOMENTUM_LR_SCHEDULER.md": {
+      "sha256": "9d679d50722ea28f36e3f21031f614fe1d993f7d6faf77ea80bf4edc7b993cb1",
+      "bytes": 6065
+    },
+    "THU_NGHIEM_NHANH_MOMENTUM_LR_SCHEDULER.csv": {
+      "sha256": "7cbbda6102fb4251c2284c57edfe97f802624c1558a81b61329f3f6c1641007f",
+      "bytes": 1007
+    },
+    "THU_NGHIEM_NHANH_MOMENTUM_LR_SCHEDULER.json": {
+      "sha256": "58e09688c8fef6558d581bb7f1b6df90dfb4ab1ab75c8f49f28186f720c1616b",
+      "bytes": 1492851
+    },
+    "figures/SO_SANH_NHANH_MOMENTUM_LR_SCHEDULER.png": {
+      "sha256": "84ed480f9d81ffcdb8d5641be4fe0ac3627ab3e447fc6546987c747eadac4a98",
+      "bytes": 70605
+    },
+    "figures/DUONG_CONG_NHANH_VALIDATION_VA_LR.png": {
+      "sha256": "0fd39f9d6dc8ed8a42d6fd7d919d8716720cbe203293b7d9c4eb28782eb89767",
+      "bytes": 215085
     }
   },
   "supplement_updates": {
@@ -537,6 +557,11 @@
     "BANG_CONG_DON_CIFAR100.csv": "2026-10-15T21:54:00.899068+07:00",
     "figures/BANG_CONG_DON_CIFAR10.png": "2026-10-15T22:13:15.911497+07:00",
     "figures/BANG_CONG_DON_CIFAR100.png": "2026-10-15T22:13:15.911497+07:00",
-    "ON_TAP_VAN_DAP_VA_SUA_MODEL_TRUC_TIEP.md": "2026-10-15T22:07:42.233528+07:00"
+    "ON_TAP_VAN_DAP_VA_SUA_MODEL_TRUC_TIEP.md": "2026-10-15T22:07:42.233528+07:00",
+    "THU_NGHIEM_NHANH_MOMENTUM_LR_SCHEDULER.md": "2026-10-16T01:57:16.893817+07:00",
+    "THU_NGHIEM_NHANH_MOMENTUM_LR_SCHEDULER.csv": "2026-10-16T01:57:16.893817+07:00",
+    "THU_NGHIEM_NHANH_MOMENTUM_LR_SCHEDULER.json": "2026-10-16T01:57:16.893817+07:00",
+    "figures/SO_SANH_NHANH_MOMENTUM_LR_SCHEDULER.png": "2026-10-16T01:57:16.893817+07:00",
+    "figures/DUONG_CONG_NHANH_VALIDATION_VA_LR.png": "2026-10-16T01:57:16.893817+07:00"
   }
 }
