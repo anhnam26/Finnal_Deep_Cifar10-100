@@ -2,7 +2,7 @@
   "captured_at": "2026-10-14T13:56:14.217308+07:00",
   "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
   "pdf_pages": 27,
-  "file_count": 125,
+  "file_count": 126,
   "verified": [
     "best weights match test SHA256",
     "10k confusion counts match top1",
@@ -513,6 +513,10 @@
     "figures/BANG_CONG_DON_CIFAR100.png": {
       "sha256": "955ca186ce23ef77ddbe79dcad0c9b52e938025ca9fa3f245bde40da14df3ec5",
       "bytes": 607260
+    },
+    "ON_TAP_VAN_DAP_VA_SUA_MODEL_TRUC_TIEP.md": {
+      "sha256": "555e4acffff429634120d7dccfd7083ab5e10ac646b676ff608013e2ba31acff",
+      "bytes": 42632
     }
   },
   "supplement_updates": {
@@ -532,6 +536,7 @@
     "BANG_CONG_DON_CIFAR10.csv": "2026-10-15T21:54:00.898897+07:00",
     "BANG_CONG_DON_CIFAR100.csv": "2026-10-15T21:54:00.899068+07:00",
     "figures/BANG_CONG_DON_CIFAR10.png": "2026-10-15T21:54:00.899736+07:00",
-    "figures/BANG_CONG_DON_CIFAR100.png": "2026-10-15T21:54:00.900263+07:00"
+    "figures/BANG_CONG_DON_CIFAR100.png": "2026-10-15T21:54:00.900263+07:00",
+    "ON_TAP_VAN_DAP_VA_SUA_MODEL_TRUC_TIEP.md": "2026-10-15T22:07:42.233528+07:00"
   }
 }
