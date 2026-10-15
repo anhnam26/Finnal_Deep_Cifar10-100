@@ -2,7 +2,7 @@
   "captured_at": "2026-10-14T13:56:14.217308+07:00",
   "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
   "pdf_pages": 27,
-  "file_count": 108,
+  "file_count": 110,
   "verified": [
     "best weights match test SHA256",
     "10k confusion counts match top1",
@@ -445,9 +445,18 @@
     "LUONG_CONV_FORWARD_CHI_TIET.txt": {
       "sha256": "566f943cc0a45938155a1384d2ddadfe11d69e2c5d45be69b46fc308a833991c",
       "bytes": 72337
+    },
+    "figures/LUONG_MODEL_DAY_DU.png": {
+      "sha256": "135812e43338d1a595b31ebcd29140706bb9ebeadb4a33479510dacb2945c4e2",
+      "bytes": 1979084
+    },
+    "figures/LUONG_MODEL_DAY_DU.svg": {
+      "sha256": "954c9723b941593ca77b6b85c1f25a90039b59f95580283ee3685a34776b10df",
+      "bytes": 332642
     }
   },
   "supplement_updates": {
-    "LUONG_CONV_FORWARD_CHI_TIET.txt": "2026-10-15T13:40:26.497435+07:00"
+    "LUONG_CONV_FORWARD_CHI_TIET.txt": "2026-10-15T13:40:26.497435+07:00",
+    "full_model_flow_image": "2026-10-15T13:59:16.274044+07:00"
   }
 }
