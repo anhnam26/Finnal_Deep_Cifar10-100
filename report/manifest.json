@@ -2,7 +2,7 @@
   "captured_at": "2026-10-14T13:56:14.217308+07:00",
   "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
   "pdf_pages": 27,
-  "file_count": 113,
+  "file_count": 115,
   "verified": [
     "best weights match test SHA256",
     "10k confusion counts match top1",
@@ -465,6 +465,14 @@
     "CONG_THUC_TINH_SHAPE.md": {
       "sha256": "6fcc6f619613f328edb948f316b02cb9f301e57da20ebb86a89518ef00de6af5",
       "bytes": 29168
+    },
+    "CompactMix_CIFAR10_CIFAR100_BAO_CAO.ipynb": {
+      "sha256": "f6e4a8aa60fd1770e9c7e5bafe0f9770292dfd3bb559b292a2a6f30318d37ec8",
+      "bytes": 1584899
+    },
+    "HUONG_DAN_NOTEBOOK_BAO_CAO.md": {
+      "sha256": "027ade93614819f329afc264fc81c243ff766d898b33b2e28720c49573ef5011",
+      "bytes": 6742
     }
   },
   "supplement_updates": {
@@ -472,6 +480,8 @@
     "full_model_flow_image": "2026-10-15T13:59:16.274044+07:00",
     "compactmix_manual_train.py": "2026-10-15T14:35:27.806753+07:00",
     "GIAI_THICH_TAT_CA_NN_TRONG_MODEL.txt": "2026-10-15T15:01:54.416365+07:00",
-    "CONG_THUC_TINH_SHAPE.md": "2026-10-15T18:08:53.042669+07:00"
+    "CONG_THUC_TINH_SHAPE.md": "2026-10-15T18:08:53.042669+07:00",
+    "CompactMix_CIFAR10_CIFAR100_BAO_CAO.ipynb": "2026-10-15T21:03:42.740585+07:00",
+    "HUONG_DAN_NOTEBOOK_BAO_CAO.md": "2026-10-15T21:03:42.740768+07:00"
   }
 }
