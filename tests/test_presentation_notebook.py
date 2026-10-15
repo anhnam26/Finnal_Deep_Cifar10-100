@@ -54,7 +54,7 @@ def test_notebook_is_valid_compilable_and_has_no_project_imports():
     import sys
     notebook=nbformat.read(NOTEBOOK,as_version=4)
     nbformat.validate(notebook)
-    allowed=set(sys.stdlib_module_names)|{"torch","torchvision","numpy","pandas","matplotlib","IPython"}
+    allowed=set(sys.stdlib_module_names)|{"torch","torchvision","numpy","pandas","matplotlib","IPython","reportlab","PIL"}
     code_cells=[c for c in notebook.cells if c.cell_type=="code"]
     assert len(code_cells)>=35
     for cell in code_cells:
@@ -132,3 +132,38 @@ def test_inconsistent_conv_is_reported_before_training(notebook_namespace):
     model.block01.context=nn.Conv2d(40,40,7,padding=2,groups=40,bias=False)
     with pytest.raises(ns["ShapeError"],match="Block01.concat"):
         ns["inspect_model"](model,10)
+
+
+def test_exam_export_matches_docx_and_keeps_unmeasured_results_blank(notebook_namespace,tmp_path):
+    import json
+    import pymupdf
+    ns=notebook_namespace
+    notebook=nbformat.read(NOTEBOOK,as_version=4)
+    for cell_id in ("optimizer-matrix","export-exam-report"):
+        cell=next(c for c in notebook.cells if c.id==cell_id)
+        for node in ast.parse(cell.source).body:
+            if isinstance(node,ast.FunctionDef) or (isinstance(node,ast.Assign) and any(
+                    isinstance(t,ast.Name) and t.id=="MATRIX" for t in node.targets)):
+                exec(compile(ast.Module(body=[node],type_ignores=[]),cell_id,"exec"),ns)
+    archived={name:ns["archived_bundle"](name) for name in ns["DATASETS"]}
+    ns["ARCHIVED"]=archived
+    ns["PROFILES"]={name:ns["inspect_model"](ns["make_model"](10 if name=="cifar10" else 100),
+                    10 if name=="cifar10" else 100,backward=False) for name in ns["DATASETS"]}
+    rows=ns["exam_comparison_rows"]()
+    assert len(rows)==12
+    assert sum(row["test_percent"] is not None for row in rows)==2
+    assert all(row["validation_percent"] is None and row["test_percent"] is None
+               for row in rows if row["optimizer"]=="adam")
+    ns["archived_bundle"]=lambda name:archived[name]
+    ns["REPORT_DIR"]=tmp_path
+    files=ns["export_exam_report"]()
+    audit=json.loads(Path(files["audit"]).read_text())
+    assert audit["complete_optimizer_lr_evidence"] is False
+    assert "multiple seeds" in audit["project_extensions_not_explicit_exam_requirements"]
+    assert "50k retraining" in audit["project_extensions_not_explicit_exam_requirements"]
+    assert "SGD and Adam with different initial LRs" in audit["explicit_exam_requirements"]
+    with pymupdf.open(files["pdf"]) as pdf:
+        text="\n".join(page.get_text() for page in pdf)
+    for token in ("CHƯA HOÀN THÀNH","97.18","82.98","not over 6M","under 1G","Adam","0.15"):
+        assert token in text,token
+    assert Path(files["markdown"]).exists() and Path(files["comparison_csv"]).exists()

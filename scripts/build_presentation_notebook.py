@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import ast
+import argparse
 import hashlib
 from pathlib import Path
 import textwrap
 
 import nbformat
+from exam_report_cells import EXAM_REPORT_CELL
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,7 +16,7 @@ SOURCE_PATH = ROOT / "report/compactmix_manual_train.py"
 OUTPUT = ROOT / "report/CompactMix_CIFAR10_CIFAR100_BAO_CAO.ipynb"
 
 
-def build_notebook():
+def build_notebook(output=None):
     source = SOURCE_PATH.read_text(encoding="utf-8")
     tree = ast.parse(source)
     nodes = {node.name: node for node in tree.body
@@ -66,7 +68,9 @@ def build_notebook():
     md(r"""
     ## 1. Đề bài và phạm vi kết quả
 
-    Theo `Final exam.docx`: model L có **≤6.000.000 tham số học được**, **<1.000.000.000 FLOPs**, train/test CIFAR-10 và CIFAR-100, so sánh SGD/Adam và nhiều LR, mô tả learning settings trong PDF.
+    Theo nguyên văn `Final exam.docx`: model L có **≤6.000.000 tham số học được**, **<1.000.000.000 FLOPs**; train/test CIFAR-10 và CIFAR-100 với **SGD, Adam và các initial LR khác nhau**; ghi chi tiết momentum/LR/epochs; nộp **PDF**. Đề còn yêu cầu kiến trúc không trùng nhóm khác và không hoàn toàn giống mạng trước, trừ model giữa kỳ của chính nhóm.
+
+    **Thứ tự nội dung chính của báo cáo:** (1) thiết kế L; (2) kiểm chứng tham số/FLOPs; (3) settings; (4) kết quả cả hai dataset; (5) bảng SGD/Adam × LR; (6) kết luận đúng mức bằng chứng. Vấn đáp chiếm 30%, CIFAR-10 30%, CIFAR-100 30%, chất lượng PDF 10%; không qua vấn đáp thì trượt môn.
 
     | Chỉ số trong PDF, snapshot 14/10/2026 | CIFAR-10 | CIFAR-100 |
     |---|---:|---:|
@@ -77,7 +81,9 @@ def build_notebook():
     | Tham số | 5.248.172 | 5.271.302 |
     | FLOPs/ảnh theo profiler bài làm | 842.406.944 | 842.453.114 |
 
-    Đây là **kết quả cũ đã đo của best train 45k**, không phải kết quả của lượt demo hay retrain 50k. Snapshot PDF chưa có final-test của retrain 50k; so sánh full-data Adam/nhiều LR, multi-seed và ablation còn thiếu. Các cell đọc evidence bên dưới sẽ kiểm chứng bảng này bằng hash checkpoint và số đếm confusion matrix.
+    Đây là **kết quả cũ đã đo của best train 45k**, không phải kết quả của lượt demo hay retrain 50k. **Phần thực nghiệm bắt buộc chưa hoàn thành là so sánh full-data Adam và nhiều LR.** Kiến trúc cần được đối chiếu với nhóm khác/mạng liên quan; chưa có bằng chứng xác nhận độc nhất.
+
+    **600 epoch, split 45k/5k, retrain 50k, multi-seed, ablation và mục tiêu 98%/90% không được đề quy định bắt buộc.** Đây là cấu hình/giao thức/mở rộng của dự án. Không dùng việc thiếu chúng để kết luận thiếu yêu cầu trong đề. Cell cuối xuất PDF mới `BAO_CAO_THEO_DE_FINAL_EXAM.pdf` theo đúng thứ tự yêu cầu, với ô chưa có kết quả để trống.
     """)
     md("## 2. Import, kiểm tra đúng Python/CUDA và xác định thư mục\n\nCell này chỉ dùng các thư viện đã có trong Python được chọn; không tạo môi trường hoặc cài thư viện vào nơi khác.")
     bootstrap = r'''
@@ -312,11 +318,11 @@ def source_fingerprint():
     md("### Kiểm tra last/best và vẽ lịch sử của lượt vừa chạy\n\nBảng này chỉ đọc checkpoint sau epoch hoàn chỉnh. Best của selection dùng validation; log train không in theo batch.")
     code(NEW_CURVES_CELL, "new-run-results")
     md(r"""
-    ## 9. Freeze recipe, retrain 50k, official test
+    ## 9. Giao thức mở rộng: freeze, retrain 50k, official test
 
     Mặc định **không chạy** phần dài này (`RUN_FINAL=False`). Sau selection full hoàn tất, freeze best epoch và loại weights raw/EMA, khởi tạo lại và train trên toàn bộ 50k. Official test chỉ được mở sau khi final train hoàn tất; SHA checkpoint gắn với test result và điểm số được cache. Final best là checkpoint của epoch cố định, không chọn bằng validation/test.
 
-    Demo/synthetic/subset bị từ chối finalize. Code final có đầy đủ phía trên để kiểm tra; không gán test score của best 45k cho final 50k.
+    Demo/synthetic/subset bị từ chối finalize. Code final có đầy đủ phía trên để kiểm tra; không gán test score của best 45k cho final 50k. **Retrain 50k là giao thức nghiên cứu bổ sung của repository, không phải một yêu cầu ghi trong Final exam.docx.** Đối với thí nghiệm mới, vẫn giữ test kín lúc lựa chọn model/recipe theo quy tắc dự án.
     """)
     code(r'''
 FINAL_RESULTS = {}
@@ -365,7 +371,9 @@ if RUN_FINAL:
     md(r"""
     ## 12. So sánh optimizer/LR theo yêu cầu đề
 
-    PDF mới có full-data SGD LR=0,1 trên hai dataset. Các cấu hình còn lại dưới đây là **kế hoạch/chưa chạy**, không phải kết quả đã đạt. `RUN_MATRIX=False` mặc định; bật khi thật sự muốn chạy nhiều thí nghiệm. Mỗi hàng có run_dir riêng, giữ best/last và resume riêng. Matrix chỉ chọn bằng validation, không tự test từng candidate.
+    Đây là phần thực nghiệm **bắt buộc còn thiếu**: PDF hiện mới có full-data SGD LR=0,1 trên hai dataset. Bảng liệt kê đủ **CIFAR-10/100 × SGD/Adam × các LR khác nhau**, ghi rõ epoch/best val/test/nguồn bằng chứng. LR 0,1 và 0,15 trong đề là ví dụ; các LR nhỏ hơn cho Adam là lựa chọn thực nghiệm, không phải số bắt buộc.
+
+    `RUN_MATRIX=False` mặc định. Bật khi muốn train các run selection full theo lịch đã đặt; mỗi run giữ best/last riêng và có thể resume. Đọc kết quả chỉ từ các run_dir được liệt kê rõ, không quét thư mục test kỹ thuật rồi coi là benchmark. Matrix chọn bằng validation; nếu bật `FINALIZE_MATRIX_WINNERS`, freeze/retrain/test chỉ winner validation của mỗi dataset. Ô test của run chưa đánh giá vẫn để trống.
     """)
     code(MATRIX_CELL,"optimizer-matrix")
     md(r"""
@@ -388,11 +396,19 @@ if RUN_FINAL:
     | EMA và raw? | EMA là trung bình trọng số theo thời gian; ở selection so cả raw/EMA bằng validation để chọn best. |
     | Last và best? | Last để resume đủ optimizer/scaler/RNG; best selection có validation accuracy cao nhất. Cả hai chỉ cập nhật sau epoch hoàn chỉnh. |
     | Điểm trong PDF từ đâu? | Hai checkpoint best train 45k, test trên đủ 10k và kiểm chứng bằng SHA/confusion; không phải demo hoặc final 50k. |
-    | Đã đủ đề chưa? | Còn so sánh full-data Adam/nhiều LR, multi-seed/ablation và final-test 50k trong snapshot báo cáo. Không điền số liệu chưa chạy. |
+    | Đã đủ đề chưa? | Chưa hoàn tất thực nghiệm so sánh full-data Adam/nhiều LR; tính khác biệt kiến trúc cần đối chiếu. Multi-seed, ablation và retrain 50k là mở rộng, không phải yêu cầu bắt buộc của đề. |
 
     Thư mục output của notebook chứa profile/layer CSV, hình kiến trúc, learning curves, confusion/per-class CSV, receipt và checkpoint lượt mới. PDF gốc là `report/Bao_cao_CIFAR10_CIFAR100.pdf`; không tự thay kết quả snapshot bằng accuracy demo.
     """)
     code(EXPORT_CELL,"export-receipt")
+    md(r"""
+    ## 15. Xuất PDF bám sát Final exam.docx
+
+    Cell này đọc nguyên văn đề, kiểm tra hash/đếm confusion của evidence đã có, và xuất PDF + Markdown + CSV theo từng yêu cầu. Chỉ đưa kết quả đã kiểm chứng vào bảng; demo/synthetic không điền vào kết quả chính. Các hàng SGD/Adam/LR chưa chạy được ghi **Chưa có kết quả**.
+
+    PDF mới là `report/BAO_CAO_THEO_DE_FINAL_EXAM.pdf`; không thay PDF snapshot cũ. Không train hoặc mở test loader trong cell xuất báo cáo. Có thể chạy lại cell này sau khi đã có kết quả matrix mới để cập nhật bảng.
+    """)
+    code(EXAM_REPORT_CELL,"export-exam-report")
     notebook = nbformat.v4.new_notebook(cells=cells,metadata={
         "kernelspec":{"display_name":"Python 3.13 (existing Microsoft Store)","language":"python","name":"python3"},
         "language_info":{"name":"python","version":"3.13"},
@@ -401,8 +417,9 @@ if RUN_FINAL:
                       "runtime":"existing Microsoft Store Python 3.13; no environment creation",
                       "default_mode":"demo"}})
     nbformat.validate(notebook)
-    OUTPUT.write_text(nbformat.writes(notebook),encoding="utf-8",newline="\n")
-    print(f"Created {OUTPUT}: {len(cells)} cells, complete inline model and trainer")
+    target=Path(output) if output is not None else OUTPUT
+    target.write_text(nbformat.writes(notebook),encoding="utf-8",newline="\n")
+    print(f"Created {target}: {len(cells)} cells, complete inline model and trainer")
     return notebook
 
 
@@ -721,22 +738,66 @@ if RECHECK_ARCHIVED_TEST:
 
 MATRIX_CELL = r'''
 MATRIX=[("sgd",.05),("sgd",.1),("sgd",.15),("adam",.0003),("adam",.001),("adam",.003)]
-comparison=[]
-for optimizer,lr in MATRIX:
-    row={"optimizer":optimizer,"initial LR":lr}
-    for name in DATASETS:
-        row[name+" archived val/test %"]=(f"{ARCHIVED[name]['test']['validation_accuracy']:.2f} / "
-            f"{ARCHIVED[name]['test']['test_metrics']['accuracy']:.2f}" if optimizer=="sgd" and lr==.1 else "Chưa có full-data trong PDF")
-    comparison.append(row)
-display(pd.DataFrame(comparison))
+FINALIZE_MATRIX_WINNERS=False  # mở rộng: chỉ chạy sau khi matrix selection đầy đủ
 MATRIX_RESULTS=[]
 if RUN_MATRIX:
+    if SYNTHETIC_CHECK:
+        raise ValueError("Matrix full-data không dùng synthetic check")
     for optimizer,lr in MATRIX:
         for cfg in notebook_configs("full",optimizer,lr):
             result=run_experiment(cfg)
             MATRIX_RESULTS.append(result)
-    display(pd.DataFrame([{"dataset":r["dataset"],"optimizer":r["optimizer"],"lr":r["learning_rate"],
-                           "validation %":r["best_val_accuracy"],"test %":r["test_accuracy"]} for r in MATRIX_RESULTS]))
+
+def exam_comparison_rows():
+    rows=[]
+    for optimizer,lr in MATRIX:
+        for cfg in notebook_configs("full",optimizer,lr):
+            name=cfg["dataset"]
+            row={"dataset":name,"optimizer":optimizer,"initial_lr":lr,
+                 "epochs":None,"best_epoch":None,"validation_percent":None,"test_percent":None,
+                 "status":"Chưa có kết quả","source":"planned","run_dir":cfg["run_dir"]}
+            folder=Path(cfg["run_dir"])
+            if (folder/"result.json").exists():
+                result=read_result(folder)
+                if (result["status"]!="complete" or result["phase"]!="selection"
+                    or result["synthetic"] or result["subset"] or result["config"]!=cfg
+                    or result["metadata"]["source_sha256"]!=source_fingerprint()
+                    or result["metadata"]["environment"]!=environment(cfg)):
+                    raise ValueError("Run matrix không khớp full recipe/source/runtime: "+str(folder))
+                split=read_json(folder/"split.json")
+                if (len(split["training"])!=45000 or len(split["validation"])!=5000
+                    or set(split["training"]) & set(split["validation"])
+                    or sorted(split["training"]+split["validation"])!=list(range(50000))):
+                    raise ValueError("Run matrix chưa có split full-data hợp lệ: "+str(folder))
+                last=load_checkpoint(folder/"last.pt")
+                best=load_checkpoint(folder/"best.pt")
+                if (last["epoch"]!=cfg["epochs"] or last["config"]!=cfg
+                    or last["source_sha256"]!=source_fingerprint()
+                    or best["epoch"]!=result["best_epoch"] or best["accuracy"]!=result["best_val_accuracy"]):
+                    raise ValueError("Checkpoint/result matrix không khớp: "+str(folder))
+                row.update(epochs=result["epochs"],best_epoch=result["best_epoch"],
+                           validation_percent=result["best_val_accuracy"],
+                           status="Đã train/validation; chưa test",source="notebook full selection")
+            elif optimizer=="sgd" and lr==.1:
+                test=ARCHIVED[name]["test"]
+                row.update(epochs=600,best_epoch=test["epoch"],validation_percent=test["validation_accuracy"],
+                           test_percent=test["test_metrics"]["accuracy"],status="Đã train và test",
+                           source="archived selection45k",run_dir=str(ARCHIVED[name]["checkpoint"].parent))
+            rows.append(row)
+    return rows
+
+if FINALIZE_MATRIX_WINNERS:
+    completed=[r for r in MATRIX_RESULTS if r["status"]=="complete" and not r["synthetic"] and not r["subset"]]
+    if len(completed)!=len(MATRIX)*len(DATASETS):
+        raise ValueError("Cần hoàn tất toàn bộ matrix selection trước khi freeze winner")
+    for name in DATASETS:
+        winner=max((r for r in completed if r["dataset"]==name),key=lambda r:r["best_val_accuracy"])
+        finalize(winner["config"]["run_dir"])
+
+EXAM_COMPARISON_ROWS=exam_comparison_rows()
+EXAM_COMPARISON_TABLE=pd.DataFrame(EXAM_COMPARISON_ROWS)
+display(EXAM_COMPARISON_TABLE)
+EXAM_COMPARISON_TABLE.to_csv(OUTPUT_ROOT/"exam_optimizer_lr_comparison.csv",index=False,encoding="utf-8-sig")
 '''
 
 TIMING_CELL = r'''
@@ -768,7 +829,8 @@ receipt={"created_at_utc":datetime.now(timezone.utc).isoformat(),"training_sourc
     "live_forward_timing":timing_rows,
     "notes":["Archived test belongs to selection45k, not final50k",
              "Demo/subset/synthetic scores are not full-data benchmark evidence",
-             "Full-data Adam/multi-LR results remain absent in the original PDF snapshot"]}
+             "Full-data Adam/multi-LR results remain absent in the original PDF snapshot",
+             "Retrain50k/multi-seed/ablations are project extensions, not explicit exam requirements"]}
 atomic_json(OUTPUT_ROOT/"presentation_receipt.json",receipt)
 print("Output:",OUTPUT_ROOT)
 print("Receipt:",OUTPUT_ROOT/"presentation_receipt.json")
@@ -777,4 +839,6 @@ display(Markdown("**Trình bày:** dữ liệu → block/forward → budget → 
 
 
 if __name__ == "__main__":
-    build_notebook()
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output",type=Path)
+    build_notebook(parser.parse_args().output)

@@ -1,0 +1,221 @@
+{
+  "exam_docx_sha256": "7d371893f16263b91cc9b39d4a75824132ed2ac336faa110ad562715be3af479",
+  "source": "Final exam.docx",
+  "requirements": [
+    {
+      "requirement": "Thi\u1ebft k\u1ebf model L, m\u00f4 t\u1ea3 ki\u1ebfn tr\u00fac",
+      "status": "\u0110\u00e3 m\u00f4 t\u1ea3",
+      "evidence": "CompactMix-L: widths 40/112/256, depths 2/3/8; code Conv/forward t\u01b0\u1eddng minh."
+    },
+    {
+      "requirement": "Tham s\u1ed1 h\u1ecdc \u0111\u01b0\u1ee3c kh\u00f4ng qu\u00e1 6M",
+      "status": "\u0110\u1ea1t",
+      "evidence": "CIFAR-10: 5.248.172; CIFAR-100: 5.271.302; ki\u1ec3m tra b\u1eb1ng forward/profile."
+    },
+    {
+      "requirement": "FLOPs d\u01b0\u1edbi 1G",
+      "status": "\u0110\u1ea1t theo convention b\u00e0i l\u00e0m",
+      "evidence": "842.406.944 v\u00e0 842.453.114 FLOPs/\u1ea3nh; 1 MAC=2 FLOPs c\u1ed9ng c\u00e1c ph\u00e9p to\u00e1n b\u1ed5 sung."
+    },
+    {
+      "requirement": "Train/test CIFAR-10 v\u00e0 CIFAR-100",
+      "status": "\u0110\u00e3 c\u00f3 \u1edf SGD LR=0,1",
+      "evidence": "Hai selection 45k/5k, 600 epoch; test best tr\u00ean \u0111\u1ee7 10k \u1ea3nh m\u1ed7i dataset."
+    },
+    {
+      "requirement": "SGD, Adam v\u00e0 c\u00e1c initial LR kh\u00e1c nhau",
+      "status": "CH\u01afA HO\u00c0N TH\u00c0NH",
+      "evidence": "Xem b\u1ea3ng optimizer \u00d7 LR \u00d7 dataset; \u00f4 ch\u01b0a \u0111o gi\u1eef tr\u1ed1ng. Code h\u1ed7 tr\u1ee3 ch\u1ea1y kh\u00f4ng thay th\u1ebf k\u1ebft qu\u1ea3 th\u1ef1c nghi\u1ec7m."
+    },
+    {
+      "requirement": "M\u00f4 t\u1ea3 learning settings chi ti\u1ebft",
+      "status": "\u0110\u00e3 ghi",
+      "evidence": "LR, momentum/betas, decay, epochs, batch, scheduler, loss, augmentation, AMP/EMA, seed v\u00e0 m\u00f4i tr\u01b0\u1eddng."
+    },
+    {
+      "requirement": "N\u1ed9p b\u00e1o c\u00e1o PDF",
+      "status": "\u0110\u00e3 xu\u1ea5t PDF",
+      "evidence": "File BAO_CAO_THEO_DE_FINAL_EXAM.pdf; c\u1ea7n \u0111i\u1ec1n th\u00f4ng tin sinh vi\u00ean v\u00e0 ki\u1ec3m tra tr\u01b0\u1edbc khi n\u1ed9p."
+    },
+    {
+      "requirement": "Ki\u1ebfn tr\u00fac kh\u00f4ng tr\u00f9ng nh\u00f3m/m\u1ea1ng tr\u01b0\u1edbc",
+      "status": "C\u1ea6N \u0110\u1ed0I CHI\u1ebeU",
+      "evidence": "M\u00f4 t\u1ea3 c\u1ea5u tr\u00fac ri\u00eang; ch\u01b0a c\u00f3 b\u1eb1ng ch\u1ee9ng x\u00e1c nh\u1eadn kh\u00f4ng tr\u00f9ng t\u1ea5t c\u1ea3 nh\u00f3m hay m\u1ea1ng \u0111\u00e3 c\u00f4ng b\u1ed1."
+    },
+    {
+      "requirement": "V\u1ea5n \u0111\u00e1p v\u00e0 n\u1ed9p \u0111\u00fang h\u1ea1n",
+      "status": "Sinh vi\u00ean th\u1ef1c hi\u1ec7n",
+      "evidence": "V\u1ea5n \u0111\u00e1p 30%; hi\u1ec7u n\u0103ng C10 30%, C100 30%; ch\u1ea5t l\u01b0\u1ee3ng PDF 10%. Kh\u00f4ng qua v\u1ea5n \u0111\u00e1p th\u00ec tr\u01b0\u1ee3t m\u00f4n."
+    }
+  ],
+  "explicit_exam_requirements": [
+    "<=6M learnable parameters",
+    "<1G FLOPs",
+    "CIFAR10 and CIFAR100",
+    "SGD and Adam with different initial LRs",
+    "detailed learning settings",
+    "PDF report",
+    "architecture distinction",
+    "oral exam and submission"
+  ],
+  "project_extensions_not_explicit_exam_requirements": [
+    "600 epochs",
+    "45k/5k split",
+    "50k retraining",
+    "multiple seeds",
+    "ablations",
+    "98%/90% accuracy targets"
+  ],
+  "comparison": [
+    {
+      "dataset": "cifar10",
+      "optimizer": "sgd",
+      "initial_lr": 0.05,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar10_sgd_lr0.05_seed42"
+    },
+    {
+      "dataset": "cifar100",
+      "optimizer": "sgd",
+      "initial_lr": 0.05,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar100_sgd_lr0.05_seed42"
+    },
+    {
+      "dataset": "cifar10",
+      "optimizer": "sgd",
+      "initial_lr": 0.1,
+      "epochs": 600,
+      "best_epoch": 567,
+      "validation_percent": 97.56,
+      "test_percent": 97.18,
+      "status": "\u0110\u00e3 train v\u00e0 test",
+      "source": "archived selection45k",
+      "run_dir": "D:\\DeepLearning\\Finnal\\report\\checkpoints\\cifar10"
+    },
+    {
+      "dataset": "cifar100",
+      "optimizer": "sgd",
+      "initial_lr": 0.1,
+      "epochs": 600,
+      "best_epoch": 399,
+      "validation_percent": 83.36,
+      "test_percent": 82.98,
+      "status": "\u0110\u00e3 train v\u00e0 test",
+      "source": "archived selection45k",
+      "run_dir": "D:\\DeepLearning\\Finnal\\report\\checkpoints\\cifar100"
+    },
+    {
+      "dataset": "cifar10",
+      "optimizer": "sgd",
+      "initial_lr": 0.15,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar10_sgd_lr0.15_seed42"
+    },
+    {
+      "dataset": "cifar100",
+      "optimizer": "sgd",
+      "initial_lr": 0.15,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar100_sgd_lr0.15_seed42"
+    },
+    {
+      "dataset": "cifar10",
+      "optimizer": "adam",
+      "initial_lr": 0.0003,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar10_adam_lr0.0003_seed42"
+    },
+    {
+      "dataset": "cifar100",
+      "optimizer": "adam",
+      "initial_lr": 0.0003,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar100_adam_lr0.0003_seed42"
+    },
+    {
+      "dataset": "cifar10",
+      "optimizer": "adam",
+      "initial_lr": 0.001,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar10_adam_lr0.001_seed42"
+    },
+    {
+      "dataset": "cifar100",
+      "optimizer": "adam",
+      "initial_lr": 0.001,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar100_adam_lr0.001_seed42"
+    },
+    {
+      "dataset": "cifar10",
+      "optimizer": "adam",
+      "initial_lr": 0.003,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar10_adam_lr0.003_seed42"
+    },
+    {
+      "dataset": "cifar100",
+      "optimizer": "adam",
+      "initial_lr": 0.003,
+      "epochs": null,
+      "best_epoch": null,
+      "validation_percent": null,
+      "test_percent": null,
+      "status": "Ch\u01b0a c\u00f3 k\u1ebft qu\u1ea3",
+      "source": "planned",
+      "run_dir": "D:\\DeepLearning\\Finnal\\experiments\\notebook_presentation\\bao_cao_20261016_full_cifar100_adam_lr0.003_seed42"
+    }
+  ],
+  "archived_checkpoint_sha256": {
+    "cifar10": "10df71eacd01d1b511d9e2ff66f65e9c3bb6fb9a017f1a59083fa399f8bb904d",
+    "cifar100": "fc8346b6493c70eea2804f1493c1e2fab7dfb5aaeb175730438106ea53118cae"
+  },
+  "pdf_sha256": "ebf098fa5c518bfa63788b826e3d5584c1d4f0db2144c307929dd86b2f551fe3",
+  "complete_optimizer_lr_evidence": false
+}

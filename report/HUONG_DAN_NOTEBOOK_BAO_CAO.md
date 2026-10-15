@@ -14,6 +14,8 @@ Không cần truy cập Colab để chạy. [Link PyTorch bạn gửi](https://c
 
 ## Thứ tự thuyết trình
 
+**Bám sát Final exam.docx:** ưu tiên thiết kế L → kiểm tra ≤6M/<1G → learning settings → kết quả CIFAR-10/100 → bảng SGD/Adam và nhiều LR → kết luận. Phần thực nghiệm bắt buộc đang thiếu là Adam và các LR khác. 600 epoch, retrain 50k, multi-seed, ablation không phải yêu cầu bắt buộc của văn bản đề; chúng là lựa chọn/giao thức mở rộng của dự án.
+
 | Mục trong notebook | Thao tác và nội dung nói |
 |---|---|
 | 1–3 | Đề bài ≤6M/<1G; kết quả cũ và giới hạn; Python/GPU; recipe |
@@ -23,11 +25,14 @@ Không cần truy cập Colab để chạy. [Link PyTorch bạn gửi](https://c
 | 7 | Xem nhãn mềm, loss và lịch LR; giải thích SGD/Adam, EMA, AMP, clip gradient |
 | 8 | Chạy cell **Chạy train mới / chạy tiếp**; đợi một dòng log/epoch; xem best/last và đường học demo |
 | 8, chạy lại cell train | Minh họa resume: tiếp tục epoch kế tiếp bằng model/EMA/optimizer/scaler/RNG đã lưu |
-| 9 | Giải thích freeze và retrain 50k; để RUN_FINAL=False trong phần trình bày ngắn |
+| 9 | Giao thức mở rộng của dự án: freeze và retrain 50k; không trình bày đây là yêu cầu bắt buộc trong đề; để RUN_FINAL=False khi báo cáo ngắn |
 | 10 | Đọc evidence của 600 epoch, kiểm tra hash/split/confusion, hiển thị kết quả và cấu hình đã dùng |
 | 11 | Nạp best cũ theo ánh xạ tên layer chính xác, dự đoán 8 ảnh validation; tùy chọn đo lại test mặc định tắt |
 | 12 | Nêu rõ mới có full-data SGD LR=0,1; những LR/Adam còn thiếu; không gọi demo là kết quả so sánh full-data |
 | 13–14 | Đo tốc độ forward tại máy hiện tại; câu hỏi vấn đáp; xuất receipt và đường dẫn hình/CSV |
+| 15 | Đọc lại Final exam.docx, xuất PDF/Markdown/CSV đối chiếu từng yêu cầu; ghi rõ các ô SGD/Adam/LR chưa có kết quả |
+
+PDF bám sát đề: [BAO_CAO_THEO_DE_FINAL_EXAM.pdf](BAO_CAO_THEO_DE_FINAL_EXAM.pdf). Bản [Markdown](BAO_CAO_THEO_DE_FINAL_EXAM.md) để đọc/sửa nội dung, [bảng SGD/Adam/LR](BANG_SO_SANH_SGD_ADAM_LR.csv) để kiểm tra số liệu. PDF snapshot cũ được giữ nguyên.
 
 ## Các phép đo đã có
 
@@ -46,6 +51,8 @@ Số liệu đã được đối chiếu với PDF:
 | CIFAR-100 | 5.271.302 | 842.453.114 | 83,36% | 82,98% |
 
 Các điểm test này là bằng chứng đã lưu của checkpoint selection train 45k. Chưa có final-test 50k trong snapshot PDF. Notebook mặc định kiểm chứng và hiển thị điểm cũ, không tự đo lại test.
+
+Đề yêu cầu train/test cả hai dataset với SGD, Adam và các LR khác nhau, nhưng không ấn định số epoch hay số LR cụ thể. Bảng kế hoạch hiện có 3 LR mỗi optimizer trên cả hai dataset. Những hàng chưa chạy phải ghi **Chưa có kết quả**. Chỉ có code hỗ trợ SGD/Adam hoặc demo ngắn chưa đủ để nói đã hoàn tất thực nghiệm này. Kiến trúc cũng cần được đối chiếu với mạng đã công bố và các nhóm khác; không khẳng định độc nhất khi chưa có bằng chứng.
 
 ## Lưu và chạy tiếp
 
