@@ -51,6 +51,66 @@ Conv: P=Cout×(Cin/groups)×kH×kW, thêm Cout nếu có bias. Linear: P=Fin×Fo
 
 Đếm trực tiếp model.parameters(), thực chạy forward để lấy shape và kiểm tra backward. Cả hai head đạt ≤6M tham số và <1G FLOPs theo convention trên. Code và bảng layer đầy đủ nằm trong notebook/CSV của output.
 
+## 3.1. Bảng tổng hợp cộng dồn từng khối
+
+Input [1,3,32,32]; hai cột shape bỏ chiều batch. B(C,E,D;H,W) là MixBlock với E=2C, hai DW3×3/5×5, grouped Conv3×3 g=8, SE E→D→E ở 1×1, hai PW và 4 BN. Stem thực tế không có BN. Σ là tổng đến khối đó; không cộng lại các giá trị Σ để tính tổng toàn mạng.
+
+P_B=2CE+34C+9E²/8+2ED+(D+E)+2(C+3E). MAC_B=HW×(2CE+34C+9E²/8)+2ED. BN đóng góp 2(C+3E) tham số nhưng 0 MAC Conv/Linear; hai Conv SE tính trên 1×1, không nhân lại với H×W.
+
+## CIFAR10 — bảng cộng dồn toàn mô hình
+
+CIFAR10: 5,248,172 Params; 0.409492864 GMac; 0.842406944 GFLOPs.
+
+| Khối | Input C×H×W | Output C×H×W | Chi tiết công thức / cấu trúc | Params / Σ Params | MACs / Σ MACs |
+|---|---|---|---|---|---|
+| stem | 3×32×32 | 40×32×32 | Conv 3×3 3→40; s=1,p=1; không BN | 1,080; Σ 1,080 | 1.105920 M; Σ 1.105920 M |
+| block01 | 40×32×32 | 40×32×32 | B(C=40,E=80,D=8;H=32,W=32); 4 BN + SiLU + SE + skip | 16,888; Σ 17,968 | 15.320320 M; Σ 16.426240 M |
+| block02 | 40×32×32 | 40×32×32 | B(C=40,E=80,D=8;H=32,W=32); 4 BN + SiLU + SE + skip | 16,888; Σ 34,856 | 15.320320 M; Σ 31.746560 M |
+| transition1 | 40×32×32 | 112×16×16 | BN(40) + SiLU + AvgPool2×2,s2 + Conv1×1 40→112 | 4,560; Σ 39,416 | 1.146880 M; Σ 32.893440 M |
+| block03 | 112×16×16 | 112×16×16 | B(C=112,E=224,D=14;H=16,W=16); 4 BN + SiLU + SE + skip | 118,510; Σ 157,926 | 28.276864 M; Σ 61.170304 M |
+| block04 | 112×16×16 | 112×16×16 | B(C=112,E=224,D=14;H=16,W=16); 4 BN + SiLU + SE + skip | 118,510; Σ 276,436 | 28.276864 M; Σ 89.447168 M |
+| block05 | 112×16×16 | 112×16×16 | B(C=112,E=224,D=14;H=16,W=16); 4 BN + SiLU + SE + skip | 118,510; Σ 394,946 | 28.276864 M; Σ 117.724032 M |
+| transition2 | 112×16×16 | 256×8×8 | BN(112) + SiLU + AvgPool2×2,s2 + Conv1×1 112→256 | 28,896; Σ 423,842 | 1.835008 M; Σ 119.559040 M |
+| block06 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 1,026,498 | 36.241408 M; Σ 155.800448 M |
+| block07 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 1,629,154 | 36.241408 M; Σ 192.041856 M |
+| block08 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 2,231,810 | 36.241408 M; Σ 228.283264 M |
+| block09 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 2,834,466 | 36.241408 M; Σ 264.524672 M |
+| block10 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 3,437,122 | 36.241408 M; Σ 300.766080 M |
+| block11 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 4,039,778 | 36.241408 M; Σ 337.007488 M |
+| block12 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 4,642,434 | 36.241408 M; Σ 373.248896 M |
+| block13 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 5,245,090 | 36.241408 M; Σ 409.490304 M |
+| head | 256×8×8 | 256 | BN(256) + SiLU + GAP1×1 + flatten + Dropout(p=0); MACs Conv/Linear=0 | 512; Σ 5,245,602 | 0.000000 M; Σ 409.490304 M |
+| classifier | 256 | 10 | Linear 256→10; P=256×10+10; MAC=256×10 | 2,570; Σ 5,248,172 | 0.002560 M; Σ 409.492864 M |
+| TỔNG | 3×32×32 | 10 | Cộng từng khối một lần | 5,248,172 | 409.492864 M |
+
+## CIFAR100 — bảng cộng dồn toàn mô hình
+
+CIFAR100: 5,271,302 Params; 0.409515904 GMac; 0.842453114 GFLOPs.
+
+| Khối | Input C×H×W | Output C×H×W | Chi tiết công thức / cấu trúc | Params / Σ Params | MACs / Σ MACs |
+|---|---|---|---|---|---|
+| stem | 3×32×32 | 40×32×32 | Conv 3×3 3→40; s=1,p=1; không BN | 1,080; Σ 1,080 | 1.105920 M; Σ 1.105920 M |
+| block01 | 40×32×32 | 40×32×32 | B(C=40,E=80,D=8;H=32,W=32); 4 BN + SiLU + SE + skip | 16,888; Σ 17,968 | 15.320320 M; Σ 16.426240 M |
+| block02 | 40×32×32 | 40×32×32 | B(C=40,E=80,D=8;H=32,W=32); 4 BN + SiLU + SE + skip | 16,888; Σ 34,856 | 15.320320 M; Σ 31.746560 M |
+| transition1 | 40×32×32 | 112×16×16 | BN(40) + SiLU + AvgPool2×2,s2 + Conv1×1 40→112 | 4,560; Σ 39,416 | 1.146880 M; Σ 32.893440 M |
+| block03 | 112×16×16 | 112×16×16 | B(C=112,E=224,D=14;H=16,W=16); 4 BN + SiLU + SE + skip | 118,510; Σ 157,926 | 28.276864 M; Σ 61.170304 M |
+| block04 | 112×16×16 | 112×16×16 | B(C=112,E=224,D=14;H=16,W=16); 4 BN + SiLU + SE + skip | 118,510; Σ 276,436 | 28.276864 M; Σ 89.447168 M |
+| block05 | 112×16×16 | 112×16×16 | B(C=112,E=224,D=14;H=16,W=16); 4 BN + SiLU + SE + skip | 118,510; Σ 394,946 | 28.276864 M; Σ 117.724032 M |
+| transition2 | 112×16×16 | 256×8×8 | BN(112) + SiLU + AvgPool2×2,s2 + Conv1×1 112→256 | 28,896; Σ 423,842 | 1.835008 M; Σ 119.559040 M |
+| block06 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 1,026,498 | 36.241408 M; Σ 155.800448 M |
+| block07 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 1,629,154 | 36.241408 M; Σ 192.041856 M |
+| block08 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 2,231,810 | 36.241408 M; Σ 228.283264 M |
+| block09 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 2,834,466 | 36.241408 M; Σ 264.524672 M |
+| block10 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 3,437,122 | 36.241408 M; Σ 300.766080 M |
+| block11 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 4,039,778 | 36.241408 M; Σ 337.007488 M |
+| block12 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 4,642,434 | 36.241408 M; Σ 373.248896 M |
+| block13 | 256×8×8 | 256×8×8 | B(C=256,E=512,D=32;H=8,W=8); 4 BN + SiLU + SE + skip | 602,656; Σ 5,245,090 | 36.241408 M; Σ 409.490304 M |
+| head | 256×8×8 | 256 | BN(256) + SiLU + GAP1×1 + flatten + Dropout(p=0); MACs Conv/Linear=0 | 512; Σ 5,245,602 | 0.000000 M; Σ 409.490304 M |
+| classifier | 256 | 100 | Linear 256→100; P=256×100+100; MAC=256×100 | 25,700; Σ 5,271,302 | 0.025600 M; Σ 409.515904 M |
+| TỔNG | 3×32×32 | 100 | Cộng từng khối một lần | 5,271,302 | 409.515904 M |
+
+1 MMac=10^6 MAC; 1 GMac=10^9 MAC. MACs trong bảng chỉ đếm Conv/Linear. Tổng FLOPs lớn hơn 2×MACs vì còn các phép BN, activation, pool, SE multiply và residual add. Bảng CSV giữ số nguyên chính xác; PNG và Markdown riêng có trong report/figures và report/BANG_CONG_DON_THAM_SO_MACS.md.
+
 ## 4. Dữ liệu và learning settings
 
 CIFAR-10/100 có 50.000 ảnh train và 10.000 test, RGB 32×32. Bài chọn stratified split 45.000 train / 5.000 validation với split seed 2026; seed khởi tạo 42. Không giao nhau, phủ đủ 50k indices. Validation dùng chọn best; hai checkpoint best 45k được đánh giá trên đủ 10k test theo yêu cầu người dùng trước đó.

@@ -216,6 +216,6 @@
     "cifar10": "10df71eacd01d1b511d9e2ff66f65e9c3bb6fb9a017f1a59083fa399f8bb904d",
     "cifar100": "fc8346b6493c70eea2804f1493c1e2fab7dfb5aaeb175730438106ea53118cae"
   },
-  "pdf_sha256": "ebf098fa5c518bfa63788b826e3d5584c1d4f0db2144c307929dd86b2f551fe3",
+  "pdf_sha256": "0052abdc469535698dfbcb69358a899cb0ddfd023e19c7e8e12a80f54b53f50a",
   "complete_optimizer_lr_evidence": false
 }

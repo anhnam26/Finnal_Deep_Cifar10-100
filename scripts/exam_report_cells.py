@@ -136,6 +136,35 @@ def export_exam_report():
     paragraph("Conv: P=Cout×(Cin/groups)×kH×kW, thêm Cout nếu có bias. Linear: P=Fin×Fout+Fout nếu có bias. BN affine: P=2C. MAC Conv=N×Hout×Wout×Cout×(Cin/groups)×kH×kW. Profiler dùng N=1, 1 MAC=2 FLOPs, cộng bias/BN/SiLU/Sigmoid/pooling/SE MUL/residual ADD; bỏ qua memory operations split/cat/reshape. Đây là ước lượng inference, không phải latency hoặc training FLOPs.")
     paragraph("Đếm trực tiếp model.parameters(), thực chạy forward để lấy shape và kiểm tra backward. Cả hai head đạt ≤6M tham số và <1G FLOPs theo convention trên. Code và bảng layer đầy đủ nằm trong notebook/CSV của output.")
 
+    heading("3.1. Bảng tổng hợp cộng dồn từng khối")
+    paragraph("Input [1,3,32,32]; hai cột shape bỏ chiều batch. B(C,E,D;H,W) là MixBlock với E=2C, hai DW3×3/5×5, grouped Conv3×3 g=8, SE E→D→E ở 1×1, hai PW và 4 BN. Stem thực tế không có BN. Σ là tổng đến khối đó; không cộng lại các giá trị Σ để tính tổng toàn mạng.")
+    paragraph("P_B=2CE+34C+9E²/8+2ED+(D+E)+2(C+3E). MAC_B=HW×(2CE+34C+9E²/8)+2ED. BN đóng góp 2(C+3E) tham số nhưng 0 MAC Conv/Linear; hai Conv SE tính trên 1×1, không nhân lại với H×W.")
+    accounting=globals().get("BLOCK_ACCOUNTING")
+    if accounting is None:
+        accounting={name:cumulative_model_accounting(make_model(10 if name=="cifar10" else 100),
+                    10 if name=="cifar10" else 100)[0] for name in DATASETS}
+    for name in DATASETS:
+        block_rows=accounting[name]
+        total=block_rows[-1]
+        if (total["parameters_cumulative"]!=PROFILES[name]["parameters"]
+            or total["macs_cumulative"]!=PROFILES[name]["macs"]
+            or total["flops_cumulative"]!=PROFILES[name]["flops"]):
+            raise ValueError("Bảng cộng dồn không khớp profiler: "+name)
+        story.append(PageBreak())
+        heading(name.upper()+" — bảng cộng dồn toàn mô hình")
+        paragraph(name.upper()+f": {total['parameters_cumulative']:,} Params; "
+                  f"{total['macs_cumulative']/1e9:.9f} GMac; {total['flops_cumulative']/1e9:.9f} GFLOPs.")
+        shown=[]
+        for row in block_rows:
+            shown.append([row["block"],row["input"],row["output"],row["calculation"],
+                f"{row['parameters']:,}; Σ {row['parameters_cumulative']:,}",
+                f"{row['macs']/1e6:.6f} M; Σ {row['macs_cumulative']/1e6:.6f} M"])
+        shown.append(["TỔNG","3×32×32","10" if name=="cifar10" else "100","Cộng từng khối một lần",
+                      f"{total['parameters_cumulative']:,}",f"{total['macs_cumulative']/1e6:.6f} M"])
+        table(["Khối","Input C×H×W","Output C×H×W","Chi tiết công thức / cấu trúc",
+               "Params / Σ Params","MACs / Σ MACs"],shown,[47,58,58,152,77,83])
+    paragraph("1 MMac=10^6 MAC; 1 GMac=10^9 MAC. MACs trong bảng chỉ đếm Conv/Linear. Tổng FLOPs lớn hơn 2×MACs vì còn các phép BN, activation, pool, SE multiply và residual add. Bảng CSV giữ số nguyên chính xác; PNG và Markdown riêng có trong report/figures và report/BANG_CONG_DON_THAM_SO_MACS.md.")
+
     heading("4. Dữ liệu và learning settings")
     paragraph("CIFAR-10/100 có 50.000 ảnh train và 10.000 test, RGB 32×32. Bài chọn stratified split 45.000 train / 5.000 validation với split seed 2026; seed khởi tạo 42. Không giao nhau, phủ đủ 50k indices. Validation dùng chọn best; hai checkpoint best 45k được đánh giá trên đủ 10k test theo yêu cầu người dùng trước đó.")
     paragraph("Train: RandomCrop(32,padding=4,reflect), HorizontalFlip, AutoAugment CIFAR10 policy cho cả hai dataset, ToTensor, Normalize theo mean/std riêng. Validation/test chỉ ToTensor/Normalize; không TTA, ensemble, pretrained hoặc dữ liệu ngoài trong hai phép đo đã có.")
@@ -202,7 +231,7 @@ def export_exam_report():
     document=SimpleDocTemplate(str(pdf_path),pagesize=A4,rightMargin=40,leftMargin=40,
         topMargin=38,bottomMargin=40,title=title,author="Sinh viên / nhóm")
     document.build(story,onFirstPage=footer,onLaterPages=footer)
-    md_path.write_text("\n".join(markdown).rstrip()+"\n",encoding="utf-8")
+    md_path.write_text("\n".join(markdown).rstrip()+"\n",encoding="utf-8",newline="\n")
     pd.DataFrame(comparison).to_csv(csv_path,index=False,encoding="utf-8-sig")
     audit={"exam_docx_sha256":exam_sha,"source":"Final exam.docx","requirements":[
         {"requirement":a,"status":b,"evidence":c} for a,b,c in checks],

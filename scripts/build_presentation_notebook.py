@@ -9,6 +9,7 @@ import textwrap
 
 import nbformat
 from exam_report_cells import EXAM_REPORT_CELL
+from model_accounting_cells import ACCOUNTING_CELL
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -269,6 +270,21 @@ for cfg in CONFIGS:
     """)
     definitions(["input_checks", "inspect_model"], "profile-definitions")
     code(PROFILE_CELL, "profile-results")
+    md(r"""
+    ### Bảng tổng hợp cộng dồn toàn bộ mô hình
+
+    Bảng theo mẫu báo cáo: **Khối — Input Shape — Output Shape — Chi tiết công thức — Params — MACs**, kèm số **Σ cộng dồn**. Đo trên một ảnh CIFAR **32×32**, không dùng input 224×224 của hình mẫu. Stem CompactMix chỉ có Conv, không có BN.
+
+    `B(C,E,D;H,W)` gồm expand/project PW, hai DW3×3/5×5, grouped Conv3×3 g=8, SE và bốn BN:
+
+    ```text
+    P_B = 2*C*E + 34*C + 9*E*E/8 + 2*E*D + (D+E) + 2*(C+3*E)
+    MAC_B = H*W*(2*C*E + 34*C + 9*E*E/8) + 2*E*D
+    ```
+
+    Mỗi leaf chỉ được tính một lần; tổng cộng dồn kiểm tra bằng profiler. **MACs chỉ gồm Conv/Linear**, còn FLOPs của báo cáo cộng thêm BN/activation/pool/MUL/ADD. Cell xuất PNG giống mẫu, CSV số nguyên và [bảng Markdown](BANG_CONG_DON_THAM_SO_MACS.md) cho cả hai dataset.
+    """)
+    code(ACCOUNTING_CELL,"cumulative-block-table")
     md("### Sơ đồ luồng đi của model và MixBlock\n\nHình được vẽ từ các khối của notebook để dùng lúc trình bày. Mỗi Conv/BN chi tiết có trong bảng layer phía trên.")
     code(DIAGRAM_CELL, "architecture-diagram")
     md(r"""

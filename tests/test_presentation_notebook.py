@@ -41,7 +41,7 @@ def notebook_namespace(tmp_path):
             continue
         ns["_remember_cell"]=lambda tag,source=cell.source: ns["NOTEBOOK_TRAINING_CELLS"].update({tag:source})
         exec(compile(cell.source,cell.id,"exec"),ns)
-    for cell_id in ("data-preview","archived-evidence","archive-weight-adapter"):
+    for cell_id in ("data-preview","archived-evidence","archive-weight-adapter","cumulative-block-table"):
         cell=next(c for c in notebook.cells if c.get("id")==cell_id)
         for node in ast.parse(cell.source).body:
             if isinstance(node,ast.FunctionDef):
@@ -167,3 +167,27 @@ def test_exam_export_matches_docx_and_keeps_unmeasured_results_blank(notebook_na
     for token in ("CHƯA HOÀN THÀNH","97.18","82.98","not over 6M","under 1G","Adam","0.15"):
         assert token in text,token
     assert Path(files["markdown"]).exists() and Path(files["comparison_csv"]).exists()
+
+
+@pytest.mark.parametrize("classes,parameters,macs,flops",[
+    (10,5_248_172,409_492_864,842_406_944),(100,5_271_302,409_515_904,842_453_114)])
+def test_cumulative_accounting_counts_each_block_once_and_matches_profile(notebook_namespace,classes,parameters,macs,flops):
+    ns=notebook_namespace
+    model=ns["make_model"](classes)
+    rows,profile=ns["cumulative_model_accounting"](model,classes)
+    assert len(rows)==18 and model.training is True
+    leaves=[leaf for row in rows for leaf in row["leaves"]]
+    assert len(leaves)==len({leaf["name"] for leaf in leaves})==261
+    for key,total in (("parameters",parameters),("macs",macs),("flops",flops)):
+        assert sum(row[key] for row in rows)==rows[-1][key+"_cumulative"]==profile[key]==total
+        assert [row[key+"_cumulative"] for row in rows]==list(__import__('itertools').accumulate(row[key] for row in rows))
+    assert rows[0]["input"]=="3×32×32" and rows[0]["output"]=="40×32×32"
+    assert rows[0]["parameters"]==1080 and rows[0]["macs"]==1_105_920
+    assert next(row for row in rows if row["block"]=="head")["macs"]==0
+    for block_name,c,d,h in (("block01",40,8,32),("block03",112,14,16),("block06",256,32,8)):
+        row=next(row for row in rows if row["block"]==block_name)
+        e=2*c
+        assert row["parameters"]==2*c*e+34*c+9*e*e//8+2*e*d+d+e+2*(c+3*e)
+        assert row["macs"]==h*h*(2*c*e+34*c+9*e*e//8)+2*e*d
+        assert row["calculation"].startswith("B(")
+    assert rows[-1]["parameters"]==256*classes+classes and rows[-1]["macs"]==256*classes

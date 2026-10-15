@@ -2,7 +2,7 @@
   "captured_at": "2026-10-14T13:56:14.217308+07:00",
   "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
   "pdf_pages": 27,
-  "file_count": 120,
+  "file_count": 125,
   "verified": [
     "best weights match test SHA256",
     "10k confusion counts match top1",
@@ -467,23 +467,23 @@
       "bytes": 29168
     },
     "CompactMix_CIFAR10_CIFAR100_BAO_CAO.ipynb": {
-      "sha256": "03c842c19e725a89a13974fe57b1678979bbbc34ab974c212c930c1d5f6df6dc",
-      "bytes": 1624137
+      "sha256": "4956de4bf0169ea03344222c0ad5be52f12815bcd1010ce9d74e72dc665d0972",
+      "bytes": 2637957
     },
     "HUONG_DAN_NOTEBOOK_BAO_CAO.md": {
-      "sha256": "6d4a21da7fae2d0a70846e9f31261cf0e7818581a876d5c69d926967514eabe0",
-      "bytes": 8266
+      "sha256": "d57147bacb9ddbc04adbd5711b88497e8fbf07a455c0e1f39512e6c09fd1926a",
+      "bytes": 8812
     },
     "BAO_CAO_THEO_DE_FINAL_EXAM.pdf": {
-      "sha256": "ebf098fa5c518bfa63788b826e3d5584c1d4f0db2144c307929dd86b2f551fe3",
-      "bytes": 510503
+      "sha256": "0052abdc469535698dfbcb69358a899cb0ddfd023e19c7e8e12a80f54b53f50a",
+      "bytes": 517432
     },
     "BAO_CAO_THEO_DE_FINAL_EXAM.md": {
-      "sha256": "9947e6c6f4ded98b5522d370d57f12b2eb1aae6197f8b2d8759e9acd1d33c697",
-      "bytes": 14036
+      "sha256": "3cc728b0ca30d84972bbfa2d5ab7ae242f96022cb7c698336e6bb2570d93c4a9",
+      "bytes": 20800
     },
     "DOI_CHIEU_FINAL_EXAM.json": {
-      "sha256": "393d46ef83b93386d49c6677a484e91ea1e033576f5926cb3d6aba26156f1504",
+      "sha256": "b400c43f07ab20583baecd739043595dea3913e7edc70d570e07ed25484516d2",
       "bytes": 8528
     },
     "DOI_CHIEU_YEU_CAU_FINAL_EXAM.md": {
@@ -493,6 +493,26 @@
     "BANG_SO_SANH_SGD_ADAM_LR.csv": {
       "sha256": "747367299420d351e5315d22b7127fa00e67177afca0a8b25a3801e7c9bd8f58",
       "bytes": 1981
+    },
+    "BANG_CONG_DON_THAM_SO_MACS.md": {
+      "sha256": "ada4bec32a53397459cc64fd2dd8830f5ce3a5b0f8f2811435ca4678547ae351",
+      "bytes": 9871
+    },
+    "BANG_CONG_DON_CIFAR10.csv": {
+      "sha256": "50f352d24780fc36504390a24747d75df13b7b28c48d9dbcf0c2c45dec0a35a7",
+      "bytes": 2515
+    },
+    "BANG_CONG_DON_CIFAR100.csv": {
+      "sha256": "2e0713f5c5b50ce67812c524715046d839564ab067db807b7213e32111343dd0",
+      "bytes": 2523
+    },
+    "figures/BANG_CONG_DON_CIFAR10.png": {
+      "sha256": "d2178d14d27137f7cce04b996000cf5616730f752f6cbf7db8b16ad0d86a25cc",
+      "bytes": 606188
+    },
+    "figures/BANG_CONG_DON_CIFAR100.png": {
+      "sha256": "955ca186ce23ef77ddbe79dcad0c9b52e938025ca9fa3f245bde40da14df3ec5",
+      "bytes": 607260
     }
   },
   "supplement_updates": {
@@ -501,12 +521,17 @@
     "compactmix_manual_train.py": "2026-10-15T14:35:27.806753+07:00",
     "GIAI_THICH_TAT_CA_NN_TRONG_MODEL.txt": "2026-10-15T15:01:54.416365+07:00",
     "CONG_THUC_TINH_SHAPE.md": "2026-10-15T18:08:53.042669+07:00",
-    "CompactMix_CIFAR10_CIFAR100_BAO_CAO.ipynb": "2026-10-15T21:29:28.447481+07:00",
-    "HUONG_DAN_NOTEBOOK_BAO_CAO.md": "2026-10-15T21:28:43.592823+07:00",
-    "BAO_CAO_THEO_DE_FINAL_EXAM.pdf": "2026-10-15T21:28:43.593204+07:00",
-    "BAO_CAO_THEO_DE_FINAL_EXAM.md": "2026-10-15T21:29:28.448125+07:00",
-    "DOI_CHIEU_FINAL_EXAM.json": "2026-10-15T21:28:43.593497+07:00",
+    "CompactMix_CIFAR10_CIFAR100_BAO_CAO.ipynb": "2026-10-15T21:55:25.526229+07:00",
+    "HUONG_DAN_NOTEBOOK_BAO_CAO.md": "2026-10-15T21:54:00.897238+07:00",
+    "BAO_CAO_THEO_DE_FINAL_EXAM.pdf": "2026-10-15T21:54:00.897836+07:00",
+    "BAO_CAO_THEO_DE_FINAL_EXAM.md": "2026-10-15T21:55:25.526641+07:00",
+    "DOI_CHIEU_FINAL_EXAM.json": "2026-10-15T21:54:00.898326+07:00",
     "DOI_CHIEU_YEU_CAU_FINAL_EXAM.md": "2026-10-15T21:28:43.593645+07:00",
-    "BANG_SO_SANH_SGD_ADAM_LR.csv": "2026-10-15T21:28:43.593796+07:00"
+    "BANG_SO_SANH_SGD_ADAM_LR.csv": "2026-10-15T21:28:43.593796+07:00",
+    "BANG_CONG_DON_THAM_SO_MACS.md": "2026-10-15T21:55:25.526834+07:00",
+    "BANG_CONG_DON_CIFAR10.csv": "2026-10-15T21:54:00.898897+07:00",
+    "BANG_CONG_DON_CIFAR100.csv": "2026-10-15T21:54:00.899068+07:00",
+    "figures/BANG_CONG_DON_CIFAR10.png": "2026-10-15T21:54:00.899736+07:00",
+    "figures/BANG_CONG_DON_CIFAR100.png": "2026-10-15T21:54:00.900263+07:00"
   }
 }

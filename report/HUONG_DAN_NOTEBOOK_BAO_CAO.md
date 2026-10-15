@@ -34,6 +34,8 @@ Không cần truy cập Colab để chạy. [Link PyTorch bạn gửi](https://c
 
 PDF bám sát đề: [BAO_CAO_THEO_DE_FINAL_EXAM.pdf](BAO_CAO_THEO_DE_FINAL_EXAM.pdf). Bản [Markdown](BAO_CAO_THEO_DE_FINAL_EXAM.md) để đọc/sửa nội dung, [bảng SGD/Adam/LR](BANG_SO_SANH_SGD_ADAM_LR.csv) để kiểm tra số liệu. PDF snapshot cũ được giữ nguyên.
 
+Sau cell profile ở mục 6 có thêm **bảng cộng dồn từng khối giống mẫu báo cáo**: input/output shape, công thức, Params và MACs cùng tổng Σ. Có [bản Markdown](BANG_CONG_DON_THAM_SO_MACS.md), [ảnh CIFAR-10](figures/BANG_CONG_DON_CIFAR10.png), [ảnh CIFAR-100](figures/BANG_CONG_DON_CIFAR100.png), và hai CSV số nguyên để kiểm tra tổng. PDF mới cũng chứa bảng này tại mục 3.1. MACs chỉ tính Conv/Linear; FLOPs còn cộng các phép BN/activation/pool/MUL/ADD theo convention báo cáo.
+
 ## Các phép đo đã có
 
 - Tham số học được, kích thước weight FP32, MACs, FLOPs và GFLOPs cho cả hai head.
