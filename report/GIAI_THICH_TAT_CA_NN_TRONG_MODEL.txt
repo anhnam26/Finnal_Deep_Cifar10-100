@@ -218,11 +218,13 @@ Ví dụ:
     nn.BatchNorm2d(num_features=80, eps=1e-5, momentum=0.1)
 
 Công dụng:
-    Chuẩn hóa giá trị đặc trưng trên từng kênh, thường giúp việc tối ưu
+    Thường giúp việc tối ưu
     ổn định hơn. Giữ nguyên shape [N,C,H,W].
 
     Với mỗi kênh, lúc train lấy thống kê trên các chiều N,H,W.
-    Các kênh có thống kê và cặp tham số điều chỉnh riêng.
+
+    Các kênh có thống kê và cặp tham số điều chỉnh riêng nên BatchNorm2d dùng để
+    Chuẩn hóa giá trị đặc trưng trên từng kênh.
 
 Công thức:
     y = gamma * (x - mean) / sqrt(variance + eps) + beta
