@@ -164,7 +164,7 @@ def export_cumulative_tables():
             data.append([row["block"],row["input"],row["output"],detail,
                 f"{row['parameters']:,}\nΣ {row['parameters_cumulative']:,}",
                 f"{row['macs']/1e6:.6f} M\nΣ {row['macs_cumulative']/1e6:.6f} M"])
-        data.append(["TỔNG","3×32×32",str(classes)+" logits","Cộng các khối một lần; không cộng lại cột Σ",
+        data.append(["TỔNG","3×32×32",str(classes)+" logits","",
                      f"{profile['parameters']:,}",f"{profile['macs']/1e6:.6f} M"])
         fig,ax=plt.subplots(figsize=(18,13.7));ax.axis("off")
         title=(f"BẢNG TỔNG HỢP CỘNG DỒN COMPACTMIX-L — {name.upper()}\n"
