@@ -2,7 +2,7 @@
   "captured_at": "2026-10-14T13:56:14.217308+07:00",
   "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
   "pdf_pages": 27,
-  "file_count": 131,
+  "file_count": 132,
   "verified": [
     "best weights match test SHA256",
     "10k confusion counts match top1",
@@ -119,8 +119,8 @@
       "bytes": 8821
     },
     "evaluate_best.py": {
-      "sha256": "e01d4b871e2ef0875d8b505fbc895a96758c9bee0b6ff1f9752a208c4d119918",
-      "bytes": 1929
+      "sha256": "21e5db5be9cd2800ea88811db8cc4105462c66635babec488676b5f394f93f2d",
+      "bytes": 6166
     },
     "evidence/cifar10/config.json": {
       "sha256": "6dae584ea0dcf12a7b61b39a245368b5729be65fe9c84a30a5229db1dccbd2c5",
@@ -537,6 +537,10 @@
     "figures/DUONG_CONG_NHANH_VALIDATION_VA_LR.png": {
       "sha256": "0fd39f9d6dc8ed8a42d6fd7d919d8716720cbe203293b7d9c4eb28782eb89767",
       "bytes": 215085
+    },
+    "CHAY_TEST_BEST.md": {
+      "sha256": "34e80a5795be838fc11083a07cf88ec725740d94ee1219a407097c7d6d4d59ea",
+      "bytes": 2491
     }
   },
   "supplement_updates": {
@@ -562,6 +566,8 @@
     "THU_NGHIEM_NHANH_MOMENTUM_LR_SCHEDULER.csv": "2026-10-16T01:57:16.893817+07:00",
     "THU_NGHIEM_NHANH_MOMENTUM_LR_SCHEDULER.json": "2026-10-16T01:57:16.893817+07:00",
     "figures/SO_SANH_NHANH_MOMENTUM_LR_SCHEDULER.png": "2026-10-16T01:57:16.893817+07:00",
-    "figures/DUONG_CONG_NHANH_VALIDATION_VA_LR.png": "2026-10-16T01:57:16.893817+07:00"
+    "figures/DUONG_CONG_NHANH_VALIDATION_VA_LR.png": "2026-10-16T01:57:16.893817+07:00",
+    "evaluate_best.py": "2026-10-16T12:58:44.994092+07:00",
+    "CHAY_TEST_BEST.md": "2026-10-16T12:58:44.994092+07:00"
   }
 }
