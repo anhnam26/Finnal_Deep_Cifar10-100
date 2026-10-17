@@ -21,16 +21,6 @@
       "dataset": "cifar10",
       "weights_and_optimizer_order_verified": true
     },
-    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final": {
-      "version": 2,
-      "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
-      "last_sha256": "fd8815fd94efff6c739a15ff3221dfc1636b440418c00b1589ae13122e00d4e3",
-      "epoch": 317,
-      "total_epochs": 567,
-      "phase": "final",
-      "dataset": "cifar10",
-      "weights_and_optimizer_order_verified": true
-    },
     "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42": {
       "version": 1,
       "source_sha256": "06fc58c8836c921769a33395563804ffc5bcf2a18483abd620bf9dea9d50a95a",

@@ -7,7 +7,7 @@ A compact CNN trained from scratch for 32×32 image classification. This reposit
 | CIFAR-10 | 5,248,172 | 0.842406944 | 97.56% | **97.18%** |
 | CIFAR-100 | 5,271,302 | 0.842453114 | 83.36% | **82.98%** |
 
-These are single-seed results from **45,000 training / 5,000 validation images**, followed by evaluation of the validation-selected EMA checkpoint on all 10,000 official test images. Both selection runs completed 600 epochs; best epochs were 567 and 399. They are **not** full-50k retraining results. The existing CIFAR-10 full-training run is incomplete at epoch 317/567 and has no final test score.
+These are single-seed results from **45,000 training / 5,000 validation images**, followed by evaluation of the validation-selected EMA checkpoint on all 10,000 official test images. Both selection runs completed 600 epochs; best epochs were 567 and 399. They are **not** full-50k retraining results.
 
 ## Repository layout
 
@@ -70,13 +70,13 @@ Repeat the same command to resume. First Ctrl+C finishes/saves the epoch; a seco
 
 ### Preserved local runs
 
-Original checkpoint bytes were preserved. A local compatibility receipt pins their hashes and the new trainer source; old tensor names are mapped without changing values. Verify the incomplete CIFAR-10 run without training or writes:
+Original checkpoint bytes were preserved. A local compatibility receipt pins their hashes and the new trainer source; old tensor names are mapped without changing values. Verify a saved run without training or writes:
 
 ```powershell
-& "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.13.exe" -X utf8 train.py --resume-run checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final --verify-resume
+& "$env:LOCALAPPDATA\Microsoft\WindowsApps\python3.13.exe" -X utf8 train.py --resume-run checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42 --verify-resume
 ```
 
-To continue it, run the same command **without `--verify-resume`**. `--resume-run` uses its saved configuration and requires the matching runtime. Do not move its folder or edit the trainer before exact resume. Compatibility does not bypass mismatches for arbitrary checkpoints.
+`--resume-run` uses the saved configuration and requires the matching runtime. Do not move a run's folder or edit the trainer before exact resume. Compatibility does not bypass mismatches for arbitrary checkpoints.
 
 ## Test evaluation
 

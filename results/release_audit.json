@@ -4,7 +4,7 @@
   "scope": "git --all, local reachable history",
   "findings": 0,
   "remote_metadata": "Unauthenticated GitHub API returned 404; remote issues/releases/artifacts/settings were not inspected or changed.",
-  "checkpoint_data_preservation": "54 original dataset/checkpoint files verified byte-identical before cleanup",
+  "checkpoint_data_preservation": "44 retained original dataset/checkpoint files verified byte-identical against results/cleanup.json",
   "runtime": "Existing Microsoft Store Python 3.13 only; no environment or packages changed.",
   "history_findings": 0,
   "public_export_findings": 0,

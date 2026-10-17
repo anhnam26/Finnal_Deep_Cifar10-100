@@ -12,7 +12,7 @@
   validation, subset/synthetic checks and official test results.
 - Select with validation, freeze decisions, retrain on all training data and
   evaluate final test once. Historical 97.18%/82.98% test results belong to
-  45k-trained selection checkpoints; the 50k retraining run is incomplete.
+  45k-trained selection checkpoints.
 - Never automatically start long training. Reuse `datasets/`; keep local
   checkpoints in `checkpoints/` and measured shareable evidence in `results/`.
 - Retain only `best.pt` and `last.pt` per run. Update checkpoints/metrics and
