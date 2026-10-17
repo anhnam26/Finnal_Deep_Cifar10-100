@@ -1,0 +1,49 @@
+{
+  "checkpoint_format": "Original checkpoint files kept byte-for-byte; legacy names mapped in train.py.",
+  "runs": {
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42": {
+      "version": 2,
+      "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
+      "last_sha256": "acf801bc5f77f4e48d974fcb6c2bdcadef6f6bc8027756d899f281b0eb546a5b",
+      "epoch": 600,
+      "total_epochs": 600,
+      "phase": "selection",
+      "dataset": "cifar100",
+      "weights_and_optimizer_order_verified": true
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42": {
+      "version": 2,
+      "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
+      "last_sha256": "bc6f9cb15620ee84693e146d845c906e60c78633cecb914f44feb919ce2f2367",
+      "epoch": 600,
+      "total_epochs": 600,
+      "phase": "selection",
+      "dataset": "cifar10",
+      "weights_and_optimizer_order_verified": true
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final": {
+      "version": 2,
+      "source_sha256": "0771c3bc10aa0b7b91f7577eb64695e0d9b3ba5d82458bb2b309289758fdec98",
+      "last_sha256": "fd8815fd94efff6c739a15ff3221dfc1636b440418c00b1589ae13122e00d4e3",
+      "epoch": 317,
+      "total_epochs": 567,
+      "phase": "final",
+      "dataset": "cifar10",
+      "weights_and_optimizer_order_verified": true
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42": {
+      "version": 1,
+      "source_sha256": "06fc58c8836c921769a33395563804ffc5bcf2a18483abd620bf9dea9d50a95a",
+      "last_sha256": "7e3c054faf2b28b6d72922ee9798dfe90b0712f41a751e25600414e1050f9643",
+      "epoch": 1,
+      "total_epochs": 600,
+      "phase": "selection",
+      "dataset": "cifar10",
+      "weights_and_optimizer_order_verified": true
+    }
+  },
+  "test_checkpoints": {
+    "cifar10": "10df71eacd01d1b511d9e2ff66f65e9c3bb6fb9a017f1a59083fa399f8bb904d",
+    "cifar100": "fc8346b6493c70eea2804f1493c1e2fab7dfb5aaeb175730438106ea53118cae"
+  }
+}

@@ -26,6 +26,10 @@ def test_default_forward_backward_and_budget(single, classes, parameters, flops)
     assert len(profile["layers"]) == 261
 
 
+def test_repository_root_is_the_script_folder(single):
+    assert single.ROOT == Path(single.__file__).resolve().parent
+
+
 @pytest.mark.parametrize("change,message", [
     ("expand", "block01.bn_expand"),
     ("kernel", "Block01.concat"),

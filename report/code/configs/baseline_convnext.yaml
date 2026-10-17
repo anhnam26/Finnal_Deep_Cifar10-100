@@ -1,6 +1,0 @@
-model:
-  family: convnext
-epochs: 600
-optimizer: adamw
-lr: 0.001
-weight_decay: 0.02

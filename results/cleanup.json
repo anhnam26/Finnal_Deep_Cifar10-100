@@ -1,0 +1,265 @@
+{
+  "preserved_original_files": {
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/.train.lock": {
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/best.pt": {
+      "bytes": 21346725,
+      "sha256": "fc8346b6493c70eea2804f1493c1e2fab7dfb5aaeb175730438106ea53118cae"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/config.json": {
+      "bytes": 923,
+      "sha256": "e99d50af0866615981cf8007d79ca8d58b87c84940723c0956b98431a075d86a"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/last.pt": {
+      "bytes": 85292678,
+      "sha256": "acf801bc5f77f4e48d974fcb6c2bdcadef6f6bc8027756d899f281b0eb546a5b"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/metadata.json": {
+      "bytes": 1007,
+      "sha256": "809dc1d579aef841a10c14c66cc1e52ce43d51f03c970d07a488f718da6c9c4d"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/metrics.csv": {
+      "bytes": 73813,
+      "sha256": "b1ee2c40ef1c46da8f3db4bf4ae1a16f35ca49481292379aba8291899892acc1"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/result.json": {
+      "bytes": 228823,
+      "sha256": "94d78758b3c9d2cb361bb452f5c6378122d1d700ba378e25b7e0c69ad1788fb2"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/split.json": {
+      "bytes": 539073,
+      "sha256": "5c5a25245b91e6697552d71e7d059ccb23df721eea6b1fe43653827fa3f2b792"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/training.log": {
+      "bytes": 145527,
+      "sha256": "e659d7f10825e0b42099e2a2fe5fe27649d29d59109f1cf0022b01b14db267ab"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/.train.lock": {
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/best.pt": {
+      "bytes": 21254181,
+      "sha256": "10df71eacd01d1b511d9e2ff66f65e9c3bb6fb9a017f1a59083fa399f8bb904d"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/config.json": {
+      "bytes": 921,
+      "sha256": "6dae584ea0dcf12a7b61b39a245368b5729be65fe9c84a30a5229db1dccbd2c5"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/last.pt": {
+      "bytes": 84918726,
+      "sha256": "bc6f9cb15620ee84693e146d845c906e60c78633cecb914f44feb919ce2f2367"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/metadata.json": {
+      "bytes": 1007,
+      "sha256": "e856575a893b361150c5b7c6869c2ac2946e79f08bade71fde794af79e9311d1"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/metrics.csv": {
+      "bytes": 74591,
+      "sha256": "6e728cd900ca184fecb92a6decfd1340cdaab18e0a1a6fb876472746f7f9d458"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/result.json": {
+      "bytes": 229596,
+      "sha256": "8275d65192c51063d9ef2001fe6ad81925b4085e889c02f67e356540bb5ed035"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/split.json": {
+      "bytes": 539072,
+      "sha256": "f22a5b972ebabbb5677e84a8a5065b82fec93868112bde8a1c81e3dafa63a572"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/training.log": {
+      "bytes": 144932,
+      "sha256": "07e23c3fc909b7a1bbe2c7834e6e4c015e3bce55c9c6557ac7053a5e716a70c5"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/.train.lock": {
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/best.pt": {
+      "bytes": 21254245,
+      "sha256": "e69aa9efd27fc98e00d64aa936d3ded50bf58d294245c5a0961e3a097efc9e15"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/config.json": {
+      "bytes": 923,
+      "sha256": "6da391b23ff97db22cf7f98cf956d772e7026b35a4410f9a2dffecb26b8ac02a"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/frozen.json": {
+      "bytes": 1288,
+      "sha256": "7f101e1f9f72f224f0e55e55140148bec18cbb820bc6b3ec60b030f6f1c8eb9e"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/last.pt": {
+      "bytes": 84863174,
+      "sha256": "fd8815fd94efff6c739a15ff3221dfc1636b440418c00b1589ae13122e00d4e3"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/metadata.json": {
+      "bytes": 1007,
+      "sha256": "0387e56b60b43670e43e72a80f3259fc9a47b2d091ce8aeb262e56362c3a38d9"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/metrics.csv": {
+      "bytes": 22879,
+      "sha256": "b14ac28f3d166b36ba63c4991e6d3a0ac7e409cc66ad42a3071b13219b42e8e3"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/split.json": {
+      "bytes": 539070,
+      "sha256": "ee28ea851d173bf869c8606ae7a797c79bd359f86c4c2344be70bc2f4ac9ff46"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/training.log": {
+      "bytes": 81219,
+      "sha256": "c5f6b3b5b0d8039b21689853da647586f3f2d86a2bbf60eedd24250305673871"
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42/.train.lock": {
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42/best.pt": {
+      "bytes": 21253285,
+      "sha256": "671a1907c18c62dd1a04d2190a7f04d64ebd1292fde2802b8f8850bea8ae38e3"
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42/config.json": {
+      "bytes": 842,
+      "sha256": "7c007e355281cb32bf87bac9728aa378bc932fc10fc26a2b978f9f81b5860e5f"
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42/last.pt": {
+      "bytes": 84834630,
+      "sha256": "7e3c054faf2b28b6d72922ee9798dfe90b0712f41a751e25600414e1050f9643"
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42/metadata.json": {
+      "bytes": 71771,
+      "sha256": "a48432d6f5adf5d82df608bf4e4f07321839de4bb86fa0b405dcc94874a83c47"
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42/metrics.csv": {
+      "bytes": 251,
+      "sha256": "68991fba6719bd89fd4e1628ea5391abe9b928a690347aae55c6ba5b575a3c9b"
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42/split.json": {
+      "bytes": 539072,
+      "sha256": "f22a5b972ebabbb5677e84a8a5065b82fec93868112bde8a1c81e3dafa63a572"
+    },
+    "checkpoints/manual_onefile/manual_cifar10_sgd_lr0.1_seed42/training.log": {
+      "bytes": 253,
+      "sha256": "ea9cc4ca1bfd5e652c6558dc1bbdf99f4c57f1ca52f37f0b5c6236b75b55f6bc"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42_final/tensorboard/events.out.tfevents.1791956461.LAPTOP-0S48IDH5.2484.1": {
+      "bytes": 108954,
+      "sha256": "b0f50b29bb64c956a5ad12c64e87b897c692706abf83a664a1c11db2e0a2f76a"
+    },
+    "checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/tensorboard/events.out.tfevents.1791849450.LAPTOP-0S48IDH5.30832.0": {
+      "bytes": 328764,
+      "sha256": "88b7bbee985e250cf9305cf5be47470111caec6693a53a39da23b96a2d9522ec"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/tensorboard/events.out.tfevents.1791900578.LAPTOP-0S48IDH5.30832.1": {
+      "bytes": 207214,
+      "sha256": "048ec5366565ae783114b8e70af6e46e816754a08bf4801f7390c8587aa1bf54"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/tensorboard/events.out.tfevents.1791935690.LAPTOP-0S48IDH5.13240.0": {
+      "bytes": 104663,
+      "sha256": "e82511adc1944738a9b03d25468b5dd7b42bcf0d172727310083ba1ccf4789a2"
+    },
+    "checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/tensorboard/events.out.tfevents.1791953216.LAPTOP-0S48IDH5.2484.0": {
+      "bytes": 17213,
+      "sha256": "0edcfa5f6747132256cf3c84cfb25625e91e5602da61f9c181d4b4f77c8049ea"
+    },
+    "datasets/cifar-10-python.tar.gz": {
+      "bytes": 170498071,
+      "sha256": "6d958be074577803d12ecdefd02955f39262c83c16fe9348329d7fe0b5c001ce"
+    },
+    "datasets/cifar-100-python.tar.gz": {
+      "bytes": 169001437,
+      "sha256": "85cd44d02ba6437773c5bbd22e183051d648de2e7d6b014e1ef29b855ba677a7"
+    },
+    "datasets/cifar-10-batches-py/batches.meta": {
+      "bytes": 158,
+      "sha256": "f962466ef690d46b226450fb9aadc74ba4bc64a76aa526b5827fe4bc5c7125cb"
+    },
+    "datasets/cifar-10-batches-py/data_batch_1": {
+      "bytes": 31035704,
+      "sha256": "54636561a3ce25bd3e19253c6b0d8538147b0ae398331ac4a2d86c6d987368cd"
+    },
+    "datasets/cifar-10-batches-py/data_batch_2": {
+      "bytes": 31035320,
+      "sha256": "766b2cef9fbc745cf056b3152224f7cf77163b330ea9a15f9392beb8b89bc5a8"
+    },
+    "datasets/cifar-10-batches-py/data_batch_3": {
+      "bytes": 31035999,
+      "sha256": "0f00d98ebfb30b3ec0ad19f9756dc2630b89003e10525f5e148445e82aa6a1f9"
+    },
+    "datasets/cifar-10-batches-py/data_batch_4": {
+      "bytes": 31035696,
+      "sha256": "3f7bb240661948b8f4d53e36ec720d8306f5668bd0071dcb4e6c947f78e9682b"
+    },
+    "datasets/cifar-10-batches-py/data_batch_5": {
+      "bytes": 31035623,
+      "sha256": "d91802434d8376bbaeeadf58a737e3a1b12ac839077e931237e0dcd43adcb154"
+    },
+    "datasets/cifar-10-batches-py/readme.html": {
+      "bytes": 88,
+      "sha256": "4d1c3fb199d6a183ae03f5162b469d7bc04edf2fad9547bd5f224271d52f98e5"
+    },
+    "datasets/cifar-10-batches-py/test_batch": {
+      "bytes": 31035526,
+      "sha256": "f53d8d457504f7cff4ea9e021afcf0e0ad8e24a91f3fc42091b8adef61157831"
+    },
+    "datasets/cifar-100-python/file.txt~": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "datasets/cifar-100-python/meta": {
+      "bytes": 1473,
+      "sha256": "a5d4786345c961390f865e93b434dbd5c6904ce880667e0cb888c97d449f28b9"
+    },
+    "datasets/cifar-100-python/test": {
+      "bytes": 31049707,
+      "sha256": "4b67687d9933c4db8f0831104447f15b93774f4f464bd0516f0f0f2ac83b7864"
+    },
+    "datasets/cifar-100-python/train": {
+      "bytes": 155249918,
+      "sha256": "735e79b04f092ca3d2e6d07f368c0a7d70d48c48d28865950cc24454cf45129b"
+    }
+  },
+  "completed_subset_relocations": [
+    {
+      "source": "experiments\\quick_recipe_20261016_5epoch\\baseline",
+      "destination": "checkpoints\\quick_comparison\\baseline",
+      "status": "completed_subset_run",
+      "resume_note": "Original run complete; old source/config retained in checkpoint and Git history"
+    },
+    {
+      "source": "experiments\\quick_recipe_20261016_5epoch\\lr_005",
+      "destination": "checkpoints\\quick_comparison\\lr_005",
+      "status": "completed_subset_run",
+      "resume_note": "Original run complete; old source/config retained in checkpoint and Git history"
+    },
+    {
+      "source": "experiments\\quick_recipe_20261016_5epoch\\lr_015",
+      "destination": "checkpoints\\quick_comparison\\lr_015",
+      "status": "completed_subset_run",
+      "resume_note": "Original run complete; old source/config retained in checkpoint and Git history"
+    },
+    {
+      "source": "experiments\\quick_recipe_20261016_5epoch\\momentum_080",
+      "destination": "checkpoints\\quick_comparison\\momentum_080",
+      "status": "completed_subset_run",
+      "resume_note": "Original run complete; old source/config retained in checkpoint and Git history"
+    },
+    {
+      "source": "experiments\\quick_recipe_20261016_5epoch\\momentum_095",
+      "destination": "checkpoints\\quick_comparison\\momentum_095",
+      "status": "completed_subset_run",
+      "resume_note": "Original run complete; old source/config retained in checkpoint and Git history"
+    },
+    {
+      "source": "experiments\\quick_recipe_20261016_5epoch\\scheduler_constant",
+      "destination": "checkpoints\\quick_comparison\\scheduler_constant",
+      "status": "completed_subset_run",
+      "resume_note": "Original run complete; old source/config retained in checkpoint and Git history"
+    },
+    {
+      "source": "experiments\\quick_recipe_20261016_5epoch\\scheduler_step",
+      "destination": "checkpoints\\quick_comparison\\scheduler_step",
+      "status": "completed_subset_run",
+      "resume_note": "Original run complete; old source/config retained in checkpoint and Git history"
+    }
+  ],
+  "obsolete_files": "Moved to sibling Finnal_cleanup_backup_20261017 after recursive deletion was rejected by automatic policy; Git history retained."
+}

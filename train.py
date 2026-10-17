@@ -1009,8 +1009,7 @@ import re
 import subprocess
 
 SCRIPT_PATH = Path(__file__).resolve()
-ROOT = next((parent for parent in (SCRIPT_PATH.parent,*SCRIPT_PATH.parents)
-             if (parent/"datasets").is_dir()),SCRIPT_PATH.parent)
+ROOT = SCRIPT_PATH.parent
 CHECKPOINT_VERSION = 3
 REQUEST_STOP = False
 ALLOW_LEGACY_RESUME = False

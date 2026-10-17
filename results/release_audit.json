@@ -1,0 +1,15 @@
+{
+  "status": "local_history_scan_passed",
+  "scanner": "gitleaks 8.30.1",
+  "scope": "git --all, local reachable history",
+  "findings": 0,
+  "remote_metadata": "Unauthenticated GitHub API returned 404; remote issues/releases/artifacts/settings were not inspected or changed.",
+  "checkpoint_data_preservation": "54 original dataset/checkpoint files verified byte-identical before cleanup",
+  "runtime": "Existing Microsoft Store Python 3.13 only; no environment or packages changed.",
+  "history_findings": 0,
+  "public_export_findings": 0,
+  "tests": "24 passed in the working repository and in a staged-file-only checkout, with no datasets/checkpoints present in the exported checkout.",
+  "ci": "Pinned checkout action, contents:read only; actual shell hygiene steps executed locally. No alternate Python installed.",
+  "license": "Apache-2.0, explicitly selected by the repository owner",
+  "cleanup": "Recursive deletion rejected by automatic policy; obsolete files moved reversibly to sibling backup outside repository."
+}

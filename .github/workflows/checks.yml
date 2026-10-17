@@ -1,0 +1,33 @@
+name: Repository checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Check whitespace
+        run: git show --format= --check HEAD
+      - name: Keep private artifacts out of Git
+        shell: bash
+        run: |
+          blocked=$(git ls-files | rg '(^datasets/|^checkpoints/|^\.env($|\.)|\.(pt|pth|pem|key)$)' || true)
+          if [ -n "$blocked" ]; then
+            echo 'Dataset, checkpoint or secret files must not be tracked.'
+            exit 1
+          fi
+      - name: Check compact entry points
+        shell: bash
+        run: |
+          test -f train.py
+          test -f evaluate.py
+          test -f LICENSE
+          test "$(git ls-files '*.py' ':!:tests/*' | wc -l)" -eq 2

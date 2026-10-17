@@ -1,44 +1,29 @@
 # Repository instructions
 
-For CIFAR research, read `.agents/skills/cifar-sota-architect/SKILL.md`.
-`Final exam.docx` governs the <=6M parameter and <1G FLOP limits for model L.
-Never invent accuracy or confuse validation, synthetic/subset checks and test.
-Keep official test sealed during architecture/HPO/recipe/model selection. Freeze
-the final recipe and epoch count, retrain on all training images, then test once.
-Record source/config/split/environment/seed and preserve resumable experiments.
-
-Use ONLY `C:\Users\anhna\AppData\Local\Microsoft\WindowsApps\python3.13.exe`,
-the user's existing Microsoft Store Python 3.13, and its own installed packages.
-Follow the user-wide Python policy in `C:\Users\anhna\.codex\AGENTS.md`.
-Never create/download/use another interpreter, venv, conda, pipx/uv/Poetry tool
-environment, `.deps` or alternate third-party package directory. Do not change
-the IDE interpreter. Install missing libraries directly into this one environment
-using the selected executable with `-m pip`; its normal user-site is permitted.
-Preserve working CUDA/PyTorch. Use `python scripts/setup_environment.py` when
-dependencies are missing. Global skills/plugins and Codex configuration remain
-unchanged unless explicitly requested by the user. Reuse `datasets/`; generated
-artifacts stay in this repository. Do not automatically launch long training.
-
-Each experiment retains only `last.pt` and `best.pt`. Last is the last completed
-training/validation epoch; best uses validation accuracy. No previous.pt or
-numbered checkpoints. Changed config/source/runtime must not silently overwrite
-or abandon an existing run: reject resume and explain `--run-name`.
-
-Normal training emits exactly one console/file summary only after a complete
-training/validation epoch and successful checkpoint/metrics writes. No batch,
-startup, queue or resume progress messages. TensorBoard metrics and best/last
-updates occur only at completed epochs; defer missing-best repair to the next
-epoch boundary. User-requested history deletion is authorized explicitly; keep
-dataset/source/Git history separate from generated training artifacts.
-
-## Git commit rules
-
-After each independent meaningful unit, validate and immediately make a local
-commit using the installed `git-commit` skill. Use small Conventional Commits
-(feat/fix/refactor/docs/test/chore/perf/build/ci) with clear English descriptions.
-Before every commit inspect status and diff, run relevant checks, and stage
-only that unit's files. Never blindly `git add .` / `git add -A`, commit secrets
-or `.env`, or include unrelated user changes.
-Commit on the current working branch. Never automatically push, force-push,
-merge main/master, rebase, reset or amend without explicit permission. Report
-failed hooks/commits instead of bypassing them. Report commit hashes at handoff.
+- Keep two runtime entry points: `train.py` and `evaluate.py`. Model blocks,
+  forward passes, data and the complete training workflow belong in `train.py`.
+- Use only the existing Microsoft Store Python 3.13 base installation at
+  `%LOCALAPPDATA%\Microsoft\WindowsApps\python3.13.exe` or its verified resolved
+  executable. Never create/use another interpreter, virtual environment or
+  alternate package directory, and do not change the IDE interpreter. Install
+  missing packages directly with that executable and `-m pip`; preserve CUDA.
+- Model L must have <=6M learnable parameters and <1G inference FLOPs for one
+  RGB32x32 image. Report the FLOP convention. Never invent accuracy or confuse
+  validation, subset/synthetic checks and official test results.
+- Select with validation, freeze decisions, retrain on all training data and
+  evaluate final test once. Historical 97.18%/82.98% test results belong to
+  45k-trained selection checkpoints; the 50k retraining run is incomplete.
+- Never automatically start long training. Reuse `datasets/`; keep local
+  checkpoints in `checkpoints/` and measured shareable evidence in `results/`.
+- Retain only `best.pt` and `last.pt` per run. Update checkpoints/metrics and
+  emit one normal summary only after a completed train/validation epoch and
+  successful writes. No batch/startup/resume chatter during normal training.
+- Preserve exact optimizer/EMA/AMP/RNG resume. Reject changed source/config/
+  runtime. Legacy compatibility is explicitly pinned and tested; do not bypass
+  it or delete checkpoints to silence a mismatch.
+- Keep datasets, weights, secrets and machine-specific config out of Git.
+  Do not modify global tools/settings or unrelated processes.
+- Validate each meaningful unit, review status/diff, stage only related files
+  and immediately create a local Conventional Commit using the installed
+  `git-commit` skill. Report hashes. Never automatically push, change visibility,
+  amend, reset, rebase, force-push or merge main/master.

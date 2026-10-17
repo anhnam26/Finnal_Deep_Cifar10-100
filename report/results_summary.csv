@@ -1,3 +1,0 @@
-﻿dataset,phase,train_images,validation_images,test_images,epochs,best_epoch,best_kind,validation_accuracy,test_accuracy,test_top5_accuracy,test_macro_f1,parameters,flops,optimizer,initial_lr,checkpoint_sha256
-CIFAR-10,selection_45k,45000,5000,10000,600,567,ema,97.56,97.18,99.87,0.9718114137649536,5248172,842406944,sgd,0.1,10df71eacd01d1b511d9e2ff66f65e9c3bb6fb9a017f1a59083fa399f8bb904d
-CIFAR-100,selection_45k,45000,5000,10000,600,399,ema,83.36,82.98,96.75,0.8294917345046997,5271302,842453114,sgd,0.1,fc8346b6493c70eea2804f1493c1e2fab7dfb5aaeb175730438106ea53118cae

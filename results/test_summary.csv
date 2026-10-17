@@ -1,0 +1,3 @@
+dataset,epoch,weights,samples,correct,accuracy_pct,top5_pct,loss,macro_f1,checkpoint
+cifar10,567,ema,10000,9718,97.18,99.87,0.18504997491836547,0.9718114137649536,checkpoints/default_cifar10_compactmix_sgd_lr0.1_seed42/best.pt
+cifar100,399,ema,10000,8298,82.98,96.75,0.651891007900238,0.8294917345046997,checkpoints/default_cifar100_compactmix_sgd_lr0.1_seed42/best.pt
