@@ -1683,6 +1683,11 @@ def configs_from_args(args):
 def main(argv=None):
     global REQUEST_STOP, ALLOW_LEGACY_RESUME
     args=parser().parse_args(argv)
+    if args.verify_resume and not args.resume_run:
+        raise ValueError("--verify-resume requires --resume-run; no training was started")
+    if args.resume_run and (args.device != "auto" or any(getattr(args,key) is not None for key in
+            ("epochs","batch_size","workers","seed","lr","weight_decay","optimizer"))):
+        raise ValueError("--resume-run uses saved settings; do not override runtime or recipe")
     if args.check:
         check_command(args.dataset)
         return 0

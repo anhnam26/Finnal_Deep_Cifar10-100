@@ -204,6 +204,13 @@ def test_audited_legacy_resume_preserves_optimizer_rng_and_checks_bytes(single, 
     assert a["source_sha256"] == single.source_fingerprint()
 
 
+def test_read_only_resume_flag_cannot_accidentally_start_training(single):
+    with pytest.raises(ValueError, match="requires --resume-run"):
+        single.main(["--verify-resume"])
+    with pytest.raises(ValueError, match="saved settings"):
+        single.main(["--resume-run", "checkpoints/any", "--epochs", "1"])
+
+
 def test_selection_never_opens_test_and_smoke_cannot_finalize(single, monkeypatch, tmp_path):
     config = tiny_training(single, monkeypatch, tmp_path/"smoke")
     config["epochs"] = 1
